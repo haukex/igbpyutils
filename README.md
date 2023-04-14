@@ -1,11 +1,25 @@
 IGB Python Utilities
 ====================
 
-This is a collection of various Python tools, libraries, and
-utilities. Please see the individual files for details.
+This is a collection of various Python tools, libraries, and utilities
+developed at the Leibniz Institute of Freshwater Ecology and Inland Fisheries
+(IGB) in the Forschungsverbund Berlin e.V.
+Please see the individual files for documentation.
 
-This is a companion library to the `igbdatatools` which is intended
-to cover a slightly broader range of Python versions.
+This is a companion library to the `igbdatatools` library
+(<https://github.com/haukex/igbdatatools>) which normally targets the latest
+Python version.
+This library is intended to contain more general-purpose tools and
+cover a slightly broader range of Python versions.
+
+
+Internal Development Notes
+--------------------------
+
+- Update version number everywhere, `git commit`
+- `git tag vX.X.X`, push
+- `python3 -m build`
+- `twine upload dist/igbpyutils-*.tar.gz`
 
 
 Author, Copyright, and License

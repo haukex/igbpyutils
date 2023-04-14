@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for igbitertools.
+"""Tests for ``igbpyutils.iter``.
 
 Author, Copyright, and License
 ------------------------------
@@ -21,9 +21,9 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see https://www.gnu.org/licenses/
 """
 import unittest
-from igbitertools import no_duplicates, SizedCallbackIterator, is_unique_everseen, zip_strict
-from more_itertools import gray_product
 from itertools import product
+from more_itertools import gray_product
+from igbpyutils.iter import no_duplicates, SizedCallbackIterator, is_unique_everseen, zip_strict
 
 class TestIgbItertools(unittest.TestCase):
 

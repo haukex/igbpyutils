@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for fileutils library.
+"""Tests for ``igbpyutils.file``.
 
 Author, Copyright, and License
 ------------------------------
@@ -27,7 +27,7 @@ import os
 import stat
 from pathlib import Path
 from tempfile import TemporaryDirectory, NamedTemporaryFile
-from fileutils import to_Paths, autoglob, Pushd, filetypestr, is_windows_filename_bad, replacer, replace_symlink, NamedTempFileDeleteLater
+from igbpyutils.file import to_Paths, autoglob, Pushd, filetypestr, is_windows_filename_bad, replacer, replace_symlink, NamedTempFileDeleteLater
 
 class TestFileUtils(unittest.TestCase):
 
@@ -48,10 +48,10 @@ class TestFileUtils(unittest.TestCase):
 
     def test_autoglob(self):
         testpath = Path(__file__).parent
-        testglob = str(testpath/'*utils*.py')
+        testglob = str(testpath/'test_*.py')
         noglob = str(testpath/'zdoesntexist*')
-        files = sorted( str(p) for p in testpath.iterdir() if 'utils' in p.name and p.name.endswith('.py') )
-        self.assertTrue(len(files)>=2)
+        files = sorted( str(p) for p in testpath.iterdir() if 'test_' in p.name and p.name.endswith('.py') )
+        self.assertTrue(len(files)==3)  # will need to be changed when we add new test files
         # this doesn't really test expanduser but that's ok
         self.assertEqual( files+[noglob], sorted(autoglob([testglob, noglob], force=True)) )
         self.assertEqual( files if sys.platform.startswith('win32') else [testglob], list(autoglob([testglob])) )
@@ -214,7 +214,7 @@ class TestFileUtils(unittest.TestCase):
                     nonlocal mockcnt
                     mockcnt += 1
                     return mockcnt  # this is ok because we know it's called as str(uuid.uuid4())
-                with patch('fileutils.uuid.uuid4', new_callable=lambda:mocked_uuid4):
+                with patch('igbpyutils.file.uuid.uuid4', new_callable=lambda:mocked_uuid4):
                     replace_symlink(fx, fy)  # abs
                 assert_state(str(fx), [mockf])
                 mockf.unlink()

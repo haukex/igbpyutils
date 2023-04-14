@@ -1,6 +1,8 @@
 #!python3
 """Some utilities for testing.
 
+Note the ``MyNamedTempFile`` utility has been moved to ``igbpyutils.file.NamedTempFileDeleteLater``.
+
 Author, Copyright, and License
 ------------------------------
 Copyright (c) 2023 Hauke Daempfling (haukex@zero-g.net)

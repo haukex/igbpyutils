@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for testutils.
+"""Tests for ``igbpyutils.test``.
 
 Author, Copyright, and License
 ------------------------------
@@ -21,7 +21,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see https://www.gnu.org/licenses/
 """
 import unittest
-from testutils import tempcopy
+from igbpyutils.test import tempcopy
 
 class TestTestUtils(unittest.TestCase):
 
