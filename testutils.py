@@ -20,28 +20,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see https://www.gnu.org/licenses/
 """
-import sys
-import os
 from copy import deepcopy
 from typing import TypeVar, Generic
-from contextlib import contextmanager
-from collections.abc import Generator
-from tempfile import NamedTemporaryFile
-
-# noinspection PyPep8Naming
-@contextmanager
-def MyNamedTempFile(*args, **kwargs) -> Generator:
-    """A ``NamedTemporaryFile`` that is unlinked on context manager exit, not on close.
-
-    TODO Later: Deprecate this function when Python 3.12 is released; users should then
-    use ``NamedTemporaryFile(delete=True, delete_on_close=False)`` instead."""
-    if sys.hexversion>=0x030C00F0:
-        # noinspection PyArgumentList
-        yield NamedTemporaryFile(*args, **kwargs, delete=True, delete_on_close=False)  # cover-not-3.9 cover-not-3.10 cover-not-3.11
-    else:
-        tf = NamedTemporaryFile(*args, **kwargs, delete=False)
-        try: yield tf
-        finally: os.unlink(tf.name)
 
 _T = TypeVar('_T')
 class tempcopy(Generic[_T]):

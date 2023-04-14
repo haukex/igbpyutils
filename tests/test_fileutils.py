@@ -26,9 +26,8 @@ import sys
 import os
 import stat
 from pathlib import Path
-from tempfile import TemporaryDirectory
-from testutils import MyNamedTempFile
-from fileutils import to_Paths, autoglob, Pushd, filetypestr, is_windows_filename_bad, replacer, replace_symlink, Filename
+from tempfile import TemporaryDirectory, NamedTemporaryFile
+from fileutils import to_Paths, autoglob, Pushd, filetypestr, is_windows_filename_bad, replacer, replace_symlink, NamedTempFileDeleteLater
 
 class TestFileUtils(unittest.TestCase):
 
@@ -125,7 +124,7 @@ class TestFileUtils(unittest.TestCase):
         self.assertTrue( is_windows_filename_bad("Hello.txt.") )
 
     def test_replacer(self):
-        with MyNamedTempFile('w', encoding='UTF-8') as tf:
+        with NamedTempFileDeleteLater('w', encoding='UTF-8') as tf:
             # Basic Test
             print("Hello\nWorld!", file=tf)
             tf.close()
@@ -166,7 +165,7 @@ class TestFileUtils(unittest.TestCase):
 
         # Permissions test
         if not sys.platform.startswith('win32'):
-            with MyNamedTempFile('w', encoding='UTF-8') as tf:
+            with NamedTempFileDeleteLater('w', encoding='UTF-8') as tf:
                 print("Hello\nWorld!", file=tf)
                 tf.close()
                 orig_ino = os.stat(tf.name).st_ino
@@ -229,6 +228,24 @@ class TestFileUtils(unittest.TestCase):
         else:  # pragma: no cover
             with self.assertRaises(NotImplementedError):
                 replace_symlink('/tmp/foo', '/tmp/bar')
+
+    def test_namedtempfiledellater(self):
+        with NamedTemporaryFile() as tf1:
+            tf1.write(b'Foo')
+            tf1.close()
+            self.assertFalse( Path(tf1.name).exists() )
+        with NamedTempFileDeleteLater() as tf2:
+            tf2.write(b'Bar')
+            tf2.close()
+            self.assertTrue( Path(tf2.name).exists() )
+        self.assertFalse( Path(tf2.name).exists() )
+        if sys.hexversion>=0x030C00F0:  # cover-not-3.9 cover-not-3.10 cover-not-3.11
+            # noinspection PyArgumentList
+            with NamedTemporaryFile(delete=True, delete_on_close=False) as tf3:
+                tf3.write(b'Quz')
+                tf3.close()
+                self.assertTrue( Path(tf3.name).exists() )
+            self.assertFalse( Path(tf3.name).exists() )
 
 if __name__ == '__main__':  # pragma: no cover
     unittest.main()

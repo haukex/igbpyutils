@@ -186,3 +186,15 @@ def replace_symlink(src :Filename, dst :Filename, missing_ok :bool=False):
     except BaseException:
         os.unlink(tf)
         raise
+
+# noinspection PyPep8Naming
+@contextmanager
+def NamedTempFileDeleteLater(*args, **kwargs) -> Generator:
+    """A ``NamedTemporaryFile`` that is unlinked on context manager exit, not on close."""
+    if sys.hexversion>=0x030C00F0:
+        # noinspection PyArgumentList
+        yield NamedTemporaryFile(*args, **kwargs, delete=True, delete_on_close=False)  # cover-not-3.9 cover-not-3.10 cover-not-3.11
+    else:
+        tf = NamedTemporaryFile(*args, **kwargs, delete=False)
+        try: yield tf
+        finally: os.unlink(tf.name)

@@ -21,30 +21,9 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see https://www.gnu.org/licenses/
 """
 import unittest
-import sys
-from testutils import tempcopy, MyNamedTempFile
-from pathlib import Path
-from tempfile import NamedTemporaryFile
+from testutils import tempcopy
 
 class TestTestUtils(unittest.TestCase):
-
-    def test_mynamedtempfile(self):
-        with NamedTemporaryFile() as tf1:
-            tf1.write(b'Foo')
-            tf1.close()
-            self.assertFalse( Path(tf1.name).exists() )
-        with MyNamedTempFile() as tf2:
-            tf2.write(b'Bar')
-            tf2.close()
-            self.assertTrue( Path(tf2.name).exists() )
-        self.assertFalse( Path(tf2.name).exists() )
-        if sys.hexversion>=0x030C00F0:  # cover-not-3.9 cover-not-3.10 cover-not-3.11
-            # noinspection PyArgumentList
-            with NamedTemporaryFile(delete=True, delete_on_close=False) as tf3:
-                tf3.write(b'Quz')
-                tf3.close()
-                self.assertTrue( Path(tf3.name).exists() )
-            self.assertFalse( Path(tf3.name).exists() )
 
     def test_tempcopy(self):
         obj = { "hello":"world", "foo":[1,2.3,True,None] }
