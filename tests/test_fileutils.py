@@ -96,14 +96,14 @@ class TestFileUtils(unittest.TestCase):
             try:
                 (tp/'baz').symlink_to('foo')
             except OSError as ex:  # pragma: no cover
-                print(f"Skipping symlink test ({ex})", file=sys.stderr)
+                print(f"Skipping symlink test", file=sys.stderr)
             else:
                 self.assertEqual( 'symbolic link', filetypestr( os.lstat(tp/'baz') ) )
             if hasattr(os, 'mkfifo'):
                 os.mkfifo(tp/'quz')
                 self.assertEqual( 'FIFO (named pipe)', filetypestr( os.lstat(tp/'quz') ) )
             else:  # pragma: no cover
-                print("Skipping fifo test (no mkfifo)", file=sys.stderr)
+                print("Skipping fifo test", file=sys.stderr)
 
     def test_is_windows_filename_bad(self):
         self.assertFalse( is_windows_filename_bad("Hello.txt") )

@@ -45,10 +45,10 @@ def zip_strict(
     __iter3: Iterable[_T0],
     *iterables: Iterable[_T0],
 ) -> Iterator[tuple[_T0, ...]]: ...  # pragma: no cover
-if sys.hexversion>=0x030A00F0:
+if sys.hexversion>=0x030A00F0:  # cover-not-3.9
     from functools import partial
     zip_strict = partial(zip, strict=True)
-else:
+else:  # cover-not-3.10 cover-not-3.11
     def zip_strict(*iterables):
         for combo in zip_longest(*iterables, fillvalue=_marker):
             for val in combo:
@@ -129,6 +129,6 @@ def no_duplicates(iterable :Iterable[_V], *, key :Callable[[_V], Any] = None, na
     and is subject to the same performance considerations.
     """
     it1, it2 = tee(iterable)
-    for element, unique in zip(it1, is_unique_everseen(it2, key=key), strict=True):
+    for element, unique in zip_strict(it1, is_unique_everseen(it2, key=key)):
         if not unique: raise ValueError(f"duplicate {name}: {element!r}")
         else: yield element

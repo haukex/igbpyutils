@@ -38,7 +38,7 @@ class TestTestUtils(unittest.TestCase):
             tf2.close()
             self.assertTrue( Path(tf2.name).exists() )
         self.assertFalse( Path(tf2.name).exists() )
-        if sys.hexversion>=0x030C00F0:  # pragma: no cover
+        if sys.hexversion>=0x030C00F0:  # cover-not-3.9 cover-not-3.10 cover-not-3.11
             # noinspection PyArgumentList
             with NamedTemporaryFile(delete=True, delete_on_close=False) as tf3:
                 tf3.write(b'Quz')

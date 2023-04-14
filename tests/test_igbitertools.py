@@ -59,7 +59,7 @@ class TestIgbItertools(unittest.TestCase):
             for i, x in enumerate(seq, start=start):
                 totest.append(f"trans {x}")
                 yield x.lower()+str(i)
-        for orow in zip( *( trans(col, ci*3) for ci, col in enumerate(unzip(gen())) ), strict=True ):
+        for orow in zip_strict( *( trans(col, ci*3) for ci, col in enumerate(unzip(gen())) ) ):
             totest.append(f"got {orow!r}")
         self.assertEqual([
             "gen ('One', 'Abc', 'Foo')", 'trans One', 'trans Abc', 'trans Foo', "got ('one0', 'abc3', 'foo6')",
@@ -69,7 +69,7 @@ class TestIgbItertools(unittest.TestCase):
         # check that an unequal number of columns throws an error
         tbl2 = ((0, "x", "y"), (1, "a"))
         with self.assertRaises(ValueError):
-            tuple( zip( *( tuple(x) for x in unzip(tbl2) ), strict=True) )
+            tuple( zip_strict( *( tuple(x) for x in unzip(tbl2) ) ) )
 
     def test_tee_zip(self):
         """Make sure that the ``tee``-then-``zip`` pattern works as expected,
@@ -86,7 +86,7 @@ class TestIgbItertools(unittest.TestCase):
                 totest.append(f"trans {x}-{out}")
                 yield out
         g1, g2 = tee(gen())
-        for i, o in zip(g1, trans(g2), strict=True):
+        for i, o in zip_strict(g1, trans(g2)):
             totest.append(f"got {i}-{o}")
         self.assertEqual( totest, [
             'gen 1', 'trans 1-A', 'got 1-A',

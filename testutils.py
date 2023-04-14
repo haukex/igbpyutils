@@ -37,7 +37,7 @@ def MyNamedTempFile(*args, **kwargs) -> Generator:
     use ``NamedTemporaryFile(delete=True, delete_on_close=False)`` instead."""
     if sys.hexversion>=0x030C00F0:
         # noinspection PyArgumentList
-        yield NamedTemporaryFile(*args, **kwargs, delete=True, delete_on_close=False)  # pragma: no cover
+        yield NamedTemporaryFile(*args, **kwargs, delete=True, delete_on_close=False)  # cover-not-3.9 cover-not-3.10 cover-not-3.11
     else:
         tf = NamedTemporaryFile(*args, **kwargs, delete=False)
         try: yield tf

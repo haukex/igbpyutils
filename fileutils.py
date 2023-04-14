@@ -28,25 +28,34 @@ from pathlib import Path
 from contextlib import contextmanager
 from functools import singledispatch
 from tempfile import NamedTemporaryFile
+from typing import Union
 from collections.abc import Generator, Iterable
 
-Filename = str|os.PathLike
+Filename = Union[str, os.PathLike]
 
-AnyPaths = Filename|bytes|Iterable[Filename|bytes]
+AnyPaths = Union[ Filename, bytes, Iterable[ Union[Filename, bytes] ] ]
 @singledispatch
-def _topath(item :Filename|bytes):
+def _topath(item :Union[Filename,bytes]):
     raise TypeError(f"I don't know how to covert this to a Path: {item!r}")
 @_topath.register
 def _(item :bytes): return Path(os.fsdecode(item))
 @_topath.register
-def _(item :Filename): return Path(item)
+def _(item :str): return Path(item)
+@_topath.register
+def _(item :os.PathLike): return Path(item)
 # noinspection PyPep8Naming
 @singledispatch
 def to_Paths(paths :AnyPaths) -> Generator[Path, None, None]:
     """Convert various inputs to ``pathlib.Path`` objects."""
     yield from map(_topath, iter(paths))
 @to_Paths.register
-def _(paths :Filename|bytes) -> Generator[Path, None, None]:
+def _(paths :str) -> Generator[Path, None, None]:
+    yield _topath(paths)
+@to_Paths.register
+def _(paths :os.PathLike) -> Generator[Path, None, None]:
+    yield _topath(paths)
+@to_Paths.register
+def _(paths :bytes) -> Generator[Path, None, None]:
     yield _topath(paths)
 
 def autoglob(files :Iterable[str], *, force :bool=False) -> Generator[str, None, None]:
@@ -64,7 +73,7 @@ def autoglob(files :Iterable[str], *, force :bool=False) -> Generator[str, None,
     else:
         yield from files
 
-class Pushd:  # pragma: no cover
+class Pushd:  # cover-not-3.11
     """A context manager that temporarily changes the current working directory."""
     def __init__(self, newdir :Filename):
         self.newdir = newdir
@@ -75,10 +84,11 @@ class Pushd:  # pragma: no cover
     def __exit__(self, exc_type, exc_val, exc_tb):
         os.chdir(self.prevdir)
         return False  # raise exception if any
-if sys.hexversion>=0x030B00F0:  # available as of Python 3.11
+if sys.hexversion>=0x030B00F0:  # cover-not-3.9 cover-not-3.10
+    # available as of Python 3.11
     import contextlib
     Pushd = contextlib.chdir  #TODO Later: can probably deprecate our Pushd in favor of this
-else: pass  # pragma: no cover
+else: pass  # cover-not-3.11
 
 def filetypestr(st :os.stat_result) -> str:
     """Return a string naming the file type reported by ``stat``."""
