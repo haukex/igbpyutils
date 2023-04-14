@@ -17,7 +17,7 @@ Internal Development Notes
 --------------------------
 
 - Update version number everywhere, `git commit`
-- `git tag vX.X.X`, push
+- `git tag vX.X.X`, `git push --tags`
 - `python3 -m build`
 - `twine upload dist/igbpyutils-*.tar.gz`
 

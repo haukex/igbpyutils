@@ -1,5 +1,9 @@
 name: Mirror this repo to IGB GitLab
-on: push
+on:
+  push:
+    # only on updates to branches, not tags (those fail)
+    branches: '**'
+    tags-ignore: '**'
 jobs:
   github-mirror:
     runs-on: ubuntu-latest
