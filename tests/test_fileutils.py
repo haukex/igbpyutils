@@ -57,22 +57,27 @@ class TestFileUtils(unittest.TestCase):
         self.assertEqual( files if sys.platform.startswith('win32') else [testglob], list(autoglob([testglob])) )
 
     def test_pushd(self):
-        prevwd = os.getcwd()
+        def realpath(pth):
+            if sys.hexversion>=0x030A00F0:  # cover-not-3.9
+                return os.path.realpath(pth, strict=True)
+            else:  # cover-not-3.10 cover-not-3.11
+                return os.path.realpath(pth)
+        prevwd = realpath(os.getcwd())
         with (TemporaryDirectory() as td1, TemporaryDirectory() as td2):
             # basic pushd
             with Pushd(td1):
-                self.assertEqual(os.getcwd(), td1)
+                self.assertEqual(realpath(os.getcwd()), realpath(td1))
                 with Pushd(td2):
-                    self.assertEqual(os.getcwd(), td2)
-                self.assertEqual(os.getcwd(), td1)
-            self.assertEqual(os.getcwd(), prevwd)
+                    self.assertEqual(realpath(os.getcwd()), realpath(td2))
+                self.assertEqual(realpath(os.getcwd()), realpath(td1))
+            self.assertEqual(realpath(os.getcwd()), prevwd)
             # exception inside the `with`
             class BogusError(RuntimeError): pass
             with self.assertRaises(BogusError):
                 with Pushd(td2):
-                    self.assertEqual(os.getcwd(), td2)
+                    self.assertEqual(realpath(os.getcwd()), realpath(td2))
                     raise BogusError()
-            self.assertEqual(os.getcwd(), prevwd)
+            self.assertEqual(realpath(os.getcwd()), prevwd)
             # attempting to change into a nonexistent directory
             with self.assertRaises(FileNotFoundError):
                 with Pushd('thisdirectorydoesnotexist'):  # the exception happens here
