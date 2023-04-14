@@ -1,5 +1,5 @@
 name: Python Tests and Coverage
-on: [push]
+on: [push, pull_request]
 jobs:
   tests:
     runs-on: ${{ matrix.os }}
