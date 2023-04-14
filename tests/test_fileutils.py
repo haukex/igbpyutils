@@ -43,6 +43,7 @@ class TestFileUtils(unittest.TestCase):
         self.assertEqual( (p,), tuple(to_Paths(p)) )
         self.assertEqual( (p,p,p), tuple(to_Paths((s,b,p))) )
         with self.assertRaises(TypeError):
+            # noinspection PyTypeChecker
             tuple( to_Paths((123,)) )
 
     def test_autoglob(self):
@@ -99,7 +100,7 @@ class TestFileUtils(unittest.TestCase):
             self.assertEqual( 'directory', filetypestr( os.lstat(tp/'bar') ) )
             try:
                 (tp/'baz').symlink_to('foo')
-            except OSError as ex:  # pragma: no cover
+            except OSError:  # pragma: no cover
                 print(f"Skipping symlink test", file=sys.stderr)
             else:
                 self.assertEqual( 'symbolic link', filetypestr( os.lstat(tp/'baz') ) )
