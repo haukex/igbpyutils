@@ -21,11 +21,22 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see https://www.gnu.org/licenses/
 """
 import unittest
-from igbitertools import no_duplicates, SizedCallbackIterator, is_unique_everseen
+from igbitertools import no_duplicates, SizedCallbackIterator, is_unique_everseen, zip_strict
 from more_itertools import gray_product
 from itertools import product
 
 class TestIgbItertools(unittest.TestCase):
+
+    def test_zip_strict(self):
+        l2 = [0, 1]
+        l3 = [2, 3, 4]
+        l3b = [5, 6, 7]
+        l4 = [8, 9, 10, 11]
+        self.assertEqual( list(zip_strict(l3, l3b)), list(zip(l3, l3b)) )
+        with self.assertRaises(ValueError):
+            list( zip_strict( l2, l3, l4 ) )
+        with self.assertRaises(ValueError):
+            list( zip_strict( l2, l2, l4, l4 ) )
 
     def test_unzip_zip(self):
         """Make sure that ``unzip``-then-``zip`` works as expected,

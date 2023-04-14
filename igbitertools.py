@@ -23,9 +23,38 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see https://www.gnu.org/licenses/
 """
+import sys
 from collections.abc import Sized, Iterator, Iterable, Callable, Generator
-from typing import TypeVar, Generic, Optional, Any
-from itertools import tee
+from typing import TypeVar, Generic, Optional, Any, overload
+from itertools import tee, zip_longest
+
+_marker = object()
+_T0 = TypeVar('_T0')
+_T1 = TypeVar('_T1')
+_T2 = TypeVar('_T2')
+@overload
+def zip_strict(__iter1: Iterable[_T1]) -> Iterator[tuple[_T1]]: ...  # pragma: no cover
+@overload
+def zip_strict(
+    __iter1: Iterable[_T1], __iter2: Iterable[_T2]
+) -> Iterator[tuple[_T1, _T2]]: ...  # pragma: no cover
+@overload
+def zip_strict(
+    __iter1: Iterable[_T0],
+    __iter2: Iterable[_T0],
+    __iter3: Iterable[_T0],
+    *iterables: Iterable[_T0],
+) -> Iterator[tuple[_T0, ...]]: ...  # pragma: no cover
+if sys.hexversion>=0x030A00F0:
+    from functools import partial
+    zip_strict = partial(zip, strict=True)
+else:
+    def zip_strict(*iterables):
+        for combo in zip_longest(*iterables, fillvalue=_marker):
+            for val in combo:
+                if val is _marker:
+                    raise ValueError("Iterables have different lengths")
+            yield combo
 
 _T = TypeVar('_T', covariant=True)
 class SizedCallbackIterator(Generic[_T], Sized, Iterator[_T]):
