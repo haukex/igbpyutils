@@ -85,9 +85,8 @@ class Pushd:  # cover-not-3.11
         os.chdir(self.prevdir)
         return False  # raise exception if any
 if sys.hexversion>=0x030B00F0:  # cover-not-3.9 cover-not-3.10
-    # available as of Python 3.11
     import contextlib
-    Pushd = contextlib.chdir  #TODO Later: can probably deprecate our Pushd in favor of this
+    Pushd = contextlib.chdir
 else: pass  # cover-not-3.11
 
 def filetypestr(st :os.stat_result) -> str:
