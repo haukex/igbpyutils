@@ -50,8 +50,8 @@ class TestFileUtils(unittest.TestCase):
         testpath = Path(__file__).parent
         testglob = str(testpath/'test_*.py')
         noglob = str(testpath/'zdoesntexist*')
-        files = sorted( str(p) for p in testpath.iterdir() if 'test_' in p.name and p.name.endswith('.py') )
-        self.assertTrue(len(files)==3)  # will need to be changed when we add new test files
+        files = sorted( str(p) for p in testpath.iterdir() if p.name.startswith('test_') and p.name.endswith('.py') )
+        self.assertTrue(len(files)>3)
         # this doesn't really test expanduser but that's ok
         self.assertEqual( files+[noglob], sorted(autoglob([testglob, noglob], force=True)) )
         self.assertEqual( files if sys.platform.startswith('win32') else [testglob], list(autoglob([testglob])) )
