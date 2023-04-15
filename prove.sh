@@ -1,14 +1,14 @@
 #!/bin/bash
 set -euo pipefail
+# Utility script for running tests/coverage on all Python versions locally
 cd "$(dirname "${BASH_SOURCE[0]}")" || exit 1
-if [ "$OSTYPE" == "msys" ]  # e.g. Git bash on Windows
-then
+if [ "$OSTYPE" == "msys" ]; then  # e.g. Git bash on Windows
   for PY_VER in Python39 Python310 Python311; do
     PYTHON="$HOME/AppData/Local/Programs/Python/$PY_VER/python"
     echo "===== Running" "$PYTHON" "====="
     PYTHONWARNDEFAULTENCODING=1 "$PYTHON" -m unittest "$@"
   done
-else
+else  # Linux
   for PY_VER in 3.9 3.10 3.11; do
     PYTHON="/opt/python$PY_VER/bin/python3"
     echo "===== Running" "$PYTHON" "====="
