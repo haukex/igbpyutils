@@ -23,6 +23,7 @@ along with this program. If not, see https://www.gnu.org/licenses/
 import unittest
 import io
 import sys
+import os
 import subprocess
 import inspect
 from contextlib import redirect_stderr
@@ -39,21 +40,24 @@ class TestErrorUtils(unittest.TestCase):
     def setUp(self):
         self.mybasepath = Path(__file__).parent.parent.joinpath('tests').resolve(strict=True).relative_to(_basepath)
         self.maxDiff = None
+        # for subprocess.run: env must include SYSTEMROOT, so just make a copy of the current env and add to it
+        self.environ = dict(os.environ)
+        self.environ['PYTHONPATH'] = str(Path(__file__).parent.parent)
 
     def test_running_in_unittest(self):
         self.assertTrue(running_in_unittest())
         sp1 = subprocess.run([sys.executable, '-c', 'import igbpyutils.error; print(repr(igbpyutils.error.running_in_unittest()))'],
-            check=True, capture_output=True, cwd=Path(__file__).parent.parent)
+            check=True, capture_output=True, cwd=Path(__file__).parent.parent, env=self.environ)
         self.assertEqual(b'False', sp1.stdout.strip())
         self.assertEqual(b'', sp1.stderr)
         sp2 = subprocess.run([sys.executable, '-c', 'import unittest; import igbpyutils.error; print(repr(igbpyutils.error.running_in_unittest()))'],
-            check=True, capture_output=True, cwd=Path(__file__).parent.parent)
+            check=True, capture_output=True, cwd=Path(__file__).parent.parent, env=self.environ)
         self.assertEqual(b'False', sp2.stdout.strip())
         self.assertEqual(b'', sp2.stderr)
 
     def test_excepthook(self):
         sp = subprocess.run([sys.executable, tests.error_test_funcs.__file__],
-            capture_output=True, cwd=Path(__file__).parent.parent, env={'PYTHONPATH':'.'} )
+            capture_output=True, cwd=Path(__file__).parent.parent, env=self.environ )
         self.assertNotEqual(0, sp.returncode)
         self.assertEqual(b'', sp.stderr)
         self.assertEqual(
@@ -71,7 +75,7 @@ class TestErrorUtils(unittest.TestCase):
 
     def test_unraisablehook(self):
         sp = subprocess.run([sys.executable, tests.error_test_unraisable.__file__],
-            capture_output=True, cwd=Path(__file__).parent.parent, env={'PYTHONPATH':'.'})
+            capture_output=True, cwd=Path(__file__).parent.parent, env=self.environ )
         self.assertEqual(0, sp.returncode)
         self.assertEqual(b'', sp.stderr)
         self.assertRegex(sp.stdout.decode("ASCII"),
