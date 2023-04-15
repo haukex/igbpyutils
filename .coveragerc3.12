@@ -3,4 +3,4 @@ exclude_lines =
     pragma: no cover
     cover-not-ge3\.10
     cover-not-ge3\.11
-    cover-not-le3\.11
+    cover-not-ge3\.12

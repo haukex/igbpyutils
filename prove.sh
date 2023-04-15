@@ -9,17 +9,13 @@ if [ "$OSTYPE" == "msys" ]; then  # e.g. Git bash on Windows
     PYTHONWARNDEFAULTENCODING=1 "$PYTHON" -m unittest "$@"
   done
 else  # Linux
-  for PY_VER in 3.9 3.10 3.11; do
+  for PY_VER in 3.9 3.10 3.11 3.12; do
     PYTHON="/opt/python$PY_VER/bin/python3"
     echo "===== Running" "$PYTHON" "====="
     COVERAGE="/opt/python$PY_VER/bin/coverage"
     PYTHONWARNDEFAULTENCODING=1 "$COVERAGE" run --rcfile=".coveragerc$PY_VER" --branch -m unittest "$@"
-    if "$COVERAGE" report --rcfile=".coveragerc$PY_VER" --skip-covered --show-missing --fail-under=100
-    then
-      "$COVERAGE" erase
-      git clean -xf htmlcov
-    else
-      "$COVERAGE" html --rcfile=".coveragerc$PY_VER"
-    fi
+    "$COVERAGE" report --rcfile=".coveragerc$PY_VER" --skip-covered --show-missing --fail-under=100
+    "$COVERAGE" erase
+    git clean -xf htmlcov
   done
 fi

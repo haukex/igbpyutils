@@ -73,7 +73,7 @@ def autoglob(files :Iterable[str], *, force :bool=False) -> Generator[str, None,
     else:
         yield from files
 
-class Pushd:  # cover-not-3.11
+class Pushd:  # cover-not-ge3.11
     """A context manager that temporarily changes the current working directory."""
     def __init__(self, newdir :Filename):
         self.newdir = newdir
@@ -84,10 +84,10 @@ class Pushd:  # cover-not-3.11
     def __exit__(self, exc_type, exc_val, exc_tb):
         os.chdir(self.prevdir)
         return False  # raise exception if any
-if sys.hexversion>=0x030B00F0:  # cover-not-3.9 cover-not-3.10
+if sys.hexversion>=0x030B00F0:  # cover-not-le3.10
     import contextlib
     Pushd = contextlib.chdir
-else: pass  # cover-not-3.11
+else: pass  # cover-not-ge3.11
 
 def filetypestr(st :os.stat_result) -> str:
     """Return a string naming the file type reported by ``stat``."""
@@ -189,12 +189,13 @@ def replace_symlink(src :Filename, dst :Filename, missing_ok :bool=False):
 
 # noinspection PyPep8Naming
 @contextmanager
-def NamedTempFileDeleteLater(*args, **kwargs) -> Generator:
+def NamedTempFileDeleteLater(*args, **kwargs) -> Generator:  # cover-not-ge3.12
     """A ``NamedTemporaryFile`` that is unlinked on context manager exit, not on close."""
-    if sys.hexversion>=0x030C00F0:
-        # noinspection PyArgumentList
-        yield NamedTemporaryFile(*args, **kwargs, delete=True, delete_on_close=False)  # cover-not-3.9 cover-not-3.10 cover-not-3.11
-    else:
-        tf = NamedTemporaryFile(*args, **kwargs, delete=False)
-        try: yield tf
-        finally: os.unlink(tf.name)
+    tf = NamedTemporaryFile(*args, **kwargs, delete=False)
+    try: yield tf
+    finally: os.unlink(tf.name)
+#TODO Later: Once 3.12 is released, change the following to 0x030C00F0
+if sys.hexversion>=0x030C0000:  # cover-not-le3.11
+    from functools import partial
+    NamedTempFileDeleteLater = partial(NamedTemporaryFile, delete=True, delete_on_close=False)
+else: pass  # cover-not-ge3.12

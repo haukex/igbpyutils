@@ -45,16 +45,16 @@ def zip_strict(
     __iter3: Iterable[_T0],
     *iterables: Iterable[_T0],
 ) -> Iterator[tuple[_T0, ...]]: ...  # pragma: no cover
-def zip_strict(*iterables):  # cover-not-3.10 cover-not-3.11
+def zip_strict(*iterables):  # cover-not-ge3.10
     """Like Python's ``zip``, but requires all iterables to return the same number of items."""
     for combo in zip_longest(*iterables, fillvalue=_marker):
         if any( v is _marker for v in combo ):
             raise ValueError("Iterables have different lengths")
         yield combo
-if sys.hexversion>=0x030A00F0:  # cover-not-3.9
+if sys.hexversion>=0x030A00F0:  # cover-not-le3.9
     from functools import partial
     zip_strict = partial(zip, strict=True)
-else: pass  # cover-not-3.10 cover-not-3.11
+else: pass  # cover-not-ge3.10
 
 _T = TypeVar('_T', covariant=True)
 class SizedCallbackIterator(Generic[_T], Sized, Iterator[_T]):
