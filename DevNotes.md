@@ -9,3 +9,4 @@ Internal Development Notes
 - `git push --tags`
 - `python3 -m build`
 - `twine upload dist/igbpyutils-*.tar.gz`
+- Add new release on GitHub
