@@ -14,7 +14,7 @@ else  # Linux
     echo "===== Running" "$PYTHON" "====="
     COVERAGE="/opt/python$PY_VER/bin/coverage"
     PYTHONWARNDEFAULTENCODING=1 "$COVERAGE" run --rcfile=".coveragerc$PY_VER" --branch -m unittest "$@"
-    "$COVERAGE" report --rcfile=".coveragerc$PY_VER" --skip-covered --show-missing --fail-under=100
+    "$COVERAGE" report --rcfile=".coveragerc$PY_VER" --skip-covered --show-missing --fail-under=100 | grep -v 'skipped due to complete coverage'
     "$COVERAGE" erase
     git clean -xf htmlcov
   done

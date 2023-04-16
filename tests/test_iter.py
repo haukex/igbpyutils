@@ -25,7 +25,7 @@ from itertools import product
 from more_itertools import gray_product
 from igbpyutils.iter import no_duplicates, SizedCallbackIterator, is_unique_everseen, zip_strict
 
-class TestIgbItertools(unittest.TestCase):
+class TestIterTools(unittest.TestCase):
 
     def test_zip_strict(self):
         l2 = [0, 1]
