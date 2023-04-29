@@ -15,28 +15,19 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
-        if: matrix.python-version != '3.12'
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v4.6
         with:
           python-version: ${{ matrix.python-version }}
-          #TODO: allow-prereleases will be available as of the next release of setup-python
-          # (https://github.com/actions/setup-python/pull/414)
-          # then we can drop the if on this step and drop the following step
-          #allow-prereleases: true
-      - name: Set up Python 3.12.0-alpha.7
-        if: matrix.python-version == '3.12'
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.12.0-alpha.7"
+          allow-prereleases: true
       - name: Install Dependencies
         run: |
           python --version
           python -m pip install --upgrade pip wheel
           pip install -r requirements.txt
-      - name: Python Tests (for non-Linux)
+      - name: Python Tests w/o Coverage (for non-Linux)
         if: matrix.os != 'Ubuntu'
         run: python -m unittest -v
-      - name: Python Tests and Coverage (for Linux)
+      - name: Python Tests with Coverage (for Linux)
         if: matrix.os == 'Ubuntu'
         run: |
           pip install coverage && \
