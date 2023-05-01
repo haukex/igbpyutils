@@ -42,6 +42,7 @@ _basepath = Path(__main__.__file__).parent.resolve(strict=True) \
     if hasattr(__main__, '__file__') and not running_in_unittest() \
     else Path().resolve(strict=True)  # just the CWD
 
+#TODO: expose these two as part of the public API
 def _extype_fullname(ex: type) -> str:
     if ex.__module__ in ('builtins','__main__'): return ex.__name__
     else: return ex.__module__ + "." + ex.__name__
