@@ -32,6 +32,7 @@ def setup(app):
 # ### Configuration ###
 project = 'igbpyutils'
 author = 'Hauke D'
+copyright = '2023 Hauke Daempfling at the IGB'
 
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx', 'sphinx.ext.viewcode']
 
