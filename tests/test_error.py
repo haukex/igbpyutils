@@ -29,7 +29,7 @@ import inspect
 from contextlib import redirect_stderr
 from pathlib import Path
 from warnings import warn
-from igbpyutils.error import running_in_unittest, javaishstacktrace, CustomHandlers, init_handlers
+from igbpyutils.error import running_in_unittest, javaishstacktrace, CustomHandlers, init_handlers, extype_fullname, ex_repr
 # noinspection PyProtectedMember
 from igbpyutils.error import _basepath
 import tests.error_test_funcs
@@ -43,6 +43,13 @@ class TestErrorUtils(unittest.TestCase):
         # for subprocess.run: env must include SYSTEMROOT, so just make a copy of the current env and add to it
         self.environ = dict(os.environ)
         self.environ['PYTHONPATH'] = str(Path(__file__).parent.parent)
+
+    def test_error_names(self):
+        from tests.error_test_funcs import TestError
+        self.assertEqual( extype_fullname(TestError), 'tests.error_test_funcs.TestError' )
+        self.assertEqual( extype_fullname(TimeoutError), 'TimeoutError' )
+        self.assertEqual( ex_repr( TestError('Hello', 'world') ), "tests.error_test_funcs.TestError('Hello', 'world')" )
+        self.assertEqual( ex_repr( ConnectionResetError('foo', 'bar') ), "ConnectionResetError('foo', 'bar')" )
 
     def test_running_in_unittest(self):
         self.assertTrue(running_in_unittest())

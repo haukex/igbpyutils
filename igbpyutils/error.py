@@ -42,13 +42,14 @@ _basepath = Path(__main__.__file__).parent.resolve(strict=True) \
     if hasattr(__main__, '__file__') and not running_in_unittest() \
     else Path().resolve(strict=True)  # just the CWD
 
-#TODO: expose these two as part of the public API
-def _extype_fullname(ex: type) -> str:
+def extype_fullname(ex: type) -> str:
+    """Return the name of an exception together with its module name, if any."""
     if ex.__module__ in ('builtins','__main__'): return ex.__name__
     else: return ex.__module__ + "." + ex.__name__
 
-def _ex_repr(ex: BaseException) -> str:
-    return _extype_fullname(type(ex)) + '(' + ', '.join(map(repr, ex.args)) + ')'
+def ex_repr(ex: BaseException) -> str:
+    """Return a representation of the exception including its full name and ``.args``."""
+    return extype_fullname(type(ex)) + '(' + ', '.join(map(repr, ex.args)) + ')'
 
 # Equivalent to Lib/warnings.py, but customize UserWarning messages to be shorter.
 def _showwarning(message, category, filename, lineno, file=None, line=None):
@@ -61,7 +62,7 @@ def _showwarning(message, category, filename, lineno, file=None, line=None):
         except OSError:  # pragma: no cover
             fn = Path(filename)
         if fn.is_relative_to(_basepath): fn = fn.relative_to(_basepath)
-        text = f"{_extype_fullname(category)}: {message} at {fn}:{lineno}\n"
+        text = f"{extype_fullname(category)}: {message} at {fn}:{lineno}\n"
     else:
         text = warnings.formatwarning(message, category, filename, lineno, line)
     try: file.write(text)
@@ -108,7 +109,7 @@ def javaishstacktrace(ex :BaseException) -> Generator[str, None, None]:
         causes.append(ex)
     first = True
     for e in reversed(causes):
-        r = _ex_repr(e)
+        r = ex_repr(e)
         if isinstance(e, AssertionError):  # for "assert"s we'd like to see the source that caused it
             lines = inspect.getinnerframes(e.__traceback__)[-1].code_context
             r += f" [{ lines[0].strip() if len(lines)==1 else ''.join(lines) !r}]"

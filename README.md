@@ -6,6 +6,7 @@ developed at the Leibniz Institute of Freshwater Ecology and Inland Fisheries
 (IGB) in the Forschungsverbund Berlin e.V. (<https://www.igb-berlin.de/en>).
 
 Please see the individual files in this project for documentation.
+(TODO: Check and generate documentation with Sphinx)
 
 This is a companion library to the `igbdatatools` library
 (<https://github.com/haukex/igbdatatools>) which normally targets the latest
