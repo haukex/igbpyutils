@@ -47,15 +47,20 @@ def _(item :os.PathLike): return Path(item)
 @singledispatch
 def to_Paths(paths :AnyPaths) -> Generator[Path, None, None]:
     """Convert various inputs to ``pathlib.Path`` objects."""
-    yield from map(_topath, iter(paths))
+    # mypy says this: Argument 1 to "iter" has incompatible type
+    # "Union[Union[str, PathLike[Any]], bytes, Iterable[Union[Union[str, PathLike[Any]], bytes]]]"; expected
+    # "SupportsIter[Iterator[Union[int, str, PathLike[Any], bytes]]]"
+    # => I'm not sure where the "int" is coming from, this seems like some kind of misdetection
+    yield from map(_topath, iter(paths))  # type: ignore
+# I'd like to use Union[bytes, str, os.PathLike] to combine the following three, but apparently singledispatch doesn't support that
+@to_Paths.register
+def _(paths :bytes) -> Generator[Path, None, None]:
+    yield _topath(paths)
 @to_Paths.register
 def _(paths :str) -> Generator[Path, None, None]:
     yield _topath(paths)
 @to_Paths.register
 def _(paths :os.PathLike) -> Generator[Path, None, None]:
-    yield _topath(paths)
-@to_Paths.register
-def _(paths :bytes) -> Generator[Path, None, None]:
     yield _topath(paths)
 
 def autoglob(files :Iterable[str], *, force :bool=False) -> Generator[str, None, None]:
@@ -86,7 +91,7 @@ class Pushd:  # cover-not-ge3.11
         return False  # raise exception if any
 if sys.hexversion>=0x030B00F0:  # cover-not-le3.10
     import contextlib
-    Pushd = contextlib.chdir
+    Pushd = contextlib.chdir  # type: ignore
 else: pass  # cover-not-ge3.11
 
 def filetypestr(st :os.stat_result) -> str:
@@ -191,11 +196,11 @@ def replace_symlink(src :Filename, dst :Filename, missing_ok :bool=False):
 @contextmanager
 def NamedTempFileDeleteLater(*args, **kwargs) -> Generator:  # cover-not-ge3.12
     """A ``NamedTemporaryFile`` that is unlinked on context manager exit, not on close."""
-    tf = NamedTemporaryFile(*args, **kwargs, delete=False)
+    tf = NamedTemporaryFile(*args, **kwargs, delete=False)  # type: ignore
     try: yield tf
     finally: os.unlink(tf.name)
 #TODO Later: Once 3.12 is released, change the following to 0x030C00F0
 if sys.hexversion>=0x030C0000:  # cover-not-le3.11
     from functools import partial
-    NamedTempFileDeleteLater = partial(NamedTemporaryFile, delete=True, delete_on_close=False)
+    NamedTempFileDeleteLater = partial(NamedTemporaryFile, delete=True, delete_on_close=False)  # type: ignore
 else: pass  # cover-not-ge3.12

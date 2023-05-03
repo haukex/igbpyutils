@@ -12,8 +12,10 @@ class Foo:
 if __name__ == '__main__':  # pragma: no cover
     import igbpyutils.error
     import gc
+    from typing import Optional
     # only set up our custom handlers when we're run, not loaded as a module!
     igbpyutils.error.init_handlers()
-    foo = Foo()
+    foo :Optional[Foo] = Foo()
+    # noinspection PyRedeclaration
     foo = None
     gc.collect()

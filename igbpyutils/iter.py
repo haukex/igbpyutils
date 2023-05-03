@@ -53,7 +53,7 @@ def zip_strict(*iterables):  # cover-not-ge3.10
         yield combo
 if sys.hexversion>=0x030A00F0:  # cover-not-le3.9
     from functools import partial
-    zip_strict = partial(zip, strict=True)
+    zip_strict = partial(zip, strict=True)  # type: ignore
 else: pass  # cover-not-ge3.10
 
 _T = TypeVar('_T', covariant=True)
@@ -86,7 +86,7 @@ class SizedCallbackIterator(Generic[_T], Sized, Iterator[_T]):
             return val
 
 _V = TypeVar('_V', covariant=True)
-def is_unique_everseen(iterable :Iterable[_V], *, key :Callable[[_V], Any] = None) -> Generator[bool, None, None]:
+def is_unique_everseen(iterable :Iterable[_V], *, key :Optional[Callable[[_V], Any]] = None) -> Generator[bool, None, None]:
     """For each element in the input iterable, return either ``True`` if this
     element is unique, or ``False`` if it is not.
 
@@ -95,9 +95,8 @@ def is_unique_everseen(iterable :Iterable[_V], *, key :Callable[[_V], Any] = Non
     """
     seen_set = set()
     seen_list = []
-    use_key = key is not None
     for element in iterable:
-        k = key(element) if use_key else element
+        k = element if key is None else key(element)
         try:
             if k not in seen_set:
                 seen_set.add(k)
@@ -111,7 +110,7 @@ def is_unique_everseen(iterable :Iterable[_V], *, key :Callable[[_V], Any] = Non
             else:
                 yield False
 
-def no_duplicates(iterable :Iterable[_V], *, key :Callable[[_V], Any] = None, name :str="item") -> Generator[_V, None, None]:
+def no_duplicates(iterable :Iterable[_V], *, key :Optional[Callable[[_V], Any]] = None, name :str="item") -> Generator[_V, None, None]:
     """Raise a ``ValueError`` if there are any duplicate elements in the
     input iterable.
 

@@ -21,6 +21,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see https://www.gnu.org/licenses/
 """
 import unittest
+from typing import Optional
 from unittest.mock import patch
 import sys
 import os
@@ -187,7 +188,7 @@ class TestFileUtils(unittest.TestCase):
                 fy = tp/'y.txt'
                 with fx.open('w', encoding='ASCII') as fh: fh.write("Hello, World\n")
 
-                def assert_state(linktarg :str, xtra :list[Path]=None):
+                def assert_state(linktarg :str, xtra :Optional[list[Path]]=None):
                     if not xtra: xtra = []
                     self.assertEqual( sorted(tp.iterdir()), sorted([fx,fy]+xtra) )
                     self.assertTrue( fx.is_file() )

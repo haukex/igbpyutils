@@ -17,5 +17,6 @@ else  # Linux
     "$COVERAGE" report --rcfile=".coveragerc$PY_VER" --skip-covered --show-missing --fail-under=100 | grep -v 'skipped due to complete coverage'
     "$COVERAGE" erase
     git clean -xf htmlcov
+    "/opt/python$PY_VER/bin/mypy" --python-version $PY_VER igbpyutils tests
   done
 fi
