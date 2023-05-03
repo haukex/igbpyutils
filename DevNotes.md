@@ -1,6 +1,8 @@
 Internal Development Notes
 --------------------------
 
+<https://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html>
+
 - Update version number everywhere
 - `git commit`
 - `git push`
