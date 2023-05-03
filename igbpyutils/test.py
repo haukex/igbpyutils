@@ -1,7 +1,8 @@
 #!python3
 """Utilities for Testing
 
-Note the ``MyNamedTempFile`` utility has been moved to ``igbpyutils.file.NamedTempFileDeleteLater``.
+Note the utility previously named "``MyNamedTempFile``"
+has been moved to :class:`igbpyutils.file.NamedTempFileDeleteLater`.
 
 Author, Copyright, and License
 ------------------------------
@@ -27,7 +28,7 @@ from typing import TypeVar, Generic
 
 _T = TypeVar('_T')
 class tempcopy(Generic[_T]):
-    """A simple context manager that provides a temporary ``deepcopy`` of the variable given to it."""
+    """A simple context manager that provides a temporary :func:`~copy.deepcopy` of the variable given to it."""
     def __init__(self, obj :_T):
         self.obj = deepcopy(obj)
     def __enter__(self) -> _T:

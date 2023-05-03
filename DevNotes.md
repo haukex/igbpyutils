@@ -1,7 +1,15 @@
 Internal Development Notes
 --------------------------
 
-<https://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html>
+Documentation
+-------------
+
+- <https://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html>
+- <https://www.sphinx-doc.org/en/master/usage/restructuredtext/domains.html#cross-referencing-python-objects>
+- TODO: <https://www.sphinx-doc.org/en/master/usage/restructuredtext/domains.html#info-field-lists>
+
+Making a Release
+----------------
 
 - Update version number everywhere
 - `git commit`

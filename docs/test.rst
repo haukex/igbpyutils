@@ -1,7 +1,8 @@
 Utilities for Testing
 =====================
 
-Note the ``MyNamedTempFile`` utility has been moved to ``igbpyutils.file.NamedTempFileDeleteLater``.
+Note the utility previously named "``MyNamedTempFile``"
+has been moved to :class:`igbpyutils.file.NamedTempFileDeleteLater`.
 
 .. automodule:: igbpyutils.test
    :members:

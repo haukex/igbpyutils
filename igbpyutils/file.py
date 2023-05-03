@@ -46,7 +46,7 @@ def _(item :os.PathLike): return Path(item)
 # noinspection PyPep8Naming
 @singledispatch
 def to_Paths(paths :AnyPaths) -> Generator[Path, None, None]:
-    """Convert various inputs to ``pathlib.Path`` objects."""
+    """Convert various inputs to :class:`~pathlib.Path` objects."""
     # mypy says this: Argument 1 to "iter" has incompatible type
     # "Union[Union[str, PathLike[Any]], bytes, Iterable[Union[Union[str, PathLike[Any]], bytes]]]"; expected
     # "SupportsIter[Iterator[Union[int, str, PathLike[Any], bytes]]]"
@@ -64,7 +64,7 @@ def _(paths :os.PathLike) -> Generator[Path, None, None]:
     yield _topath(paths)
 
 def autoglob(files :Iterable[str], *, force :bool=False) -> Generator[str, None, None]:
-    """In Windows, automatically apply ``glob`` and ``expanduser``, otherwise don't change the input."""
+    """In Windows, automatically apply :func:`~glob.glob` and :func:`~os.path.expanduser`, otherwise don't change the input."""
     from glob import glob
     from os.path import expanduser
     if sys.platform.startswith('win32') or force:
@@ -95,7 +95,7 @@ if sys.hexversion>=0x030B00F0:  # cover-not-le3.10
 else: pass  # cover-not-ge3.11
 
 def filetypestr(st :os.stat_result) -> str:
-    """Return a string naming the file type reported by ``stat``."""
+    """Return a string naming the file type reported by :func:`os.stat`."""
     if stat.S_ISDIR(st.st_mode): return "directory"
     elif stat.S_ISCHR(st.st_mode): return "character special device file"  # pragma: no cover
     elif stat.S_ISBLK(st.st_mode): return "block special device file"  # pragma: no cover
@@ -140,7 +140,7 @@ def replacer(file :Filename, *, binary :bool=False, encoding=None, errors=None, 
     When the context manager is exited, it will replace the input file over the temporary file.
     If an error occurs in the context manager, the temporary file is unlinked and the original file left unchanged.
 
-    Depending on the OS and file system, the ``os.replace`` used here *may* be an atomic operation.
+    Depending on the OS and file system, the :func:`os.replace` used here *may* be an atomic operation.
     However, this function doesn't provide protection against multiple writers and is therefore
     intended for files with a single writer and multiple readers.
     Multiple writers will need to be coordinated with external locking mechanisms.
@@ -165,7 +165,7 @@ def replacer(file :Filename, *, binary :bool=False, encoding=None, errors=None, 
 def replace_symlink(src :Filename, dst :Filename, missing_ok :bool=False):
     """Attempt to atomically replace (or create) a symbolic link pointing to ``src`` named ``dst``.
 
-    Depending on the OS and file system, the ``os.replace`` used here *may* be an atomic operation.
+    Depending on the OS and file system, the :func:`os.replace` used here *may* be an atomic operation.
     However, the surrounding operations (e.g. checking if ``dst`` exists etc.) present a small
     chance for race conditions, so this function is primarily suited for situations with a single
     writer and multiple readers.
@@ -195,7 +195,7 @@ def replace_symlink(src :Filename, dst :Filename, missing_ok :bool=False):
 # noinspection PyPep8Naming
 @contextmanager
 def NamedTempFileDeleteLater(*args, **kwargs) -> Generator:  # cover-not-ge3.12
-    """A ``NamedTemporaryFile`` that is unlinked on context manager exit, not on close."""
+    """A :func:`~tempfile.NamedTemporaryFile` that is unlinked on context manager exit, not on close."""
     tf = NamedTemporaryFile(*args, **kwargs, delete=False)  # type: ignore
     try: yield tf
     finally: os.unlink(tf.name)

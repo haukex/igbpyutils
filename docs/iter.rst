@@ -1,8 +1,8 @@
 A Few Useful Iterators
 ======================
 
-Note the iterator ``gray_product`` that used to be in this module
-has been merged into ``more_itertools`` as of version 9.1.0.
+Note the iterator "``gray_product``" that used to be in this module
+has been merged into :mod:`more_itertools` as of its version 9.1.0.
 
 .. automodule:: igbpyutils.iter
    :members:

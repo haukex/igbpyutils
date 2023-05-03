@@ -23,7 +23,7 @@ along with this program. If not, see https://www.gnu.org/licenses/
 from datetime import timedelta
 
 def timedelta_str(td :timedelta) -> str:
-    """Simple replacement for timedelta's default string formatting with nicer output of negative deltas.
+    """Simple replacement for the :class:`~datetime.timedelta` default string formatting with nicer output of negative deltas.
 
         >>> str(timedelta(hours=-1))
         '-1 day, 23:00:00'
@@ -31,8 +31,9 @@ def timedelta_str(td :timedelta) -> str:
         '-1:00:00'
 
     Possible alternatives:
-    - https://dateutil.readthedocs.io/en/stable/relativedelta.html
-    - https://pypi.org/project/readabledelta/
+
+    * https://dateutil.readthedocs.io/en/stable/relativedelta.html
+    * https://pypi.org/project/readabledelta/
     """
     return '-' + str(-td) if td < timedelta(0) else str(td)
 
