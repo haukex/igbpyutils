@@ -5,9 +5,9 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "igbpyutils"
 description = "Various Python Utilities"
-version = "0.0.5"
+version = "0.0.6"
 authors = [ { name="Hauke D", email="haukex@zero-g.net" } ]
-readme = "README.md"
+readme = "README.rst"
 requires-python = ">=3.9"
 classifiers = [
     "Programming Language :: Python :: 3",

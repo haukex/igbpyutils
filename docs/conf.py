@@ -1,6 +1,7 @@
 # Configuration file for the Sphinx documentation builder.
 from pathlib import Path
 import sys
+import tomllib
 sys.path.insert(0, str(Path(__file__).parent.parent.resolve(strict=True)))
 
 # ### Munging Code ###
@@ -33,6 +34,8 @@ def setup(app):
 project = 'igbpyutils'
 author = 'Hauke D'
 copyright = '2023 Hauke Daempfling at the IGB'
+with (Path(__file__).parent.parent/'pyproject.toml').open('rb') as fh:
+    version = tomllib.load(fh)['project']['version']
 
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx', 'sphinx.ext.viewcode']
 
