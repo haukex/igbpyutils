@@ -1,5 +1,5 @@
 #!python3
-"""Library with error handling and formatting utilities.
+"""Error Handling and Formatting Utilities
 
 Author, Copyright, and License
 ------------------------------
@@ -30,7 +30,7 @@ import __main__  # just to get __main__.__file__ below
 from traceback import extract_tb
 
 def running_in_unittest() -> bool:
-    """Attempt to detect if we're running under ``unittest``.
+    """Attempt to detect if we're running under :mod:`unittest`.
 
     This is slightly hackish and used in this module only for slightly nicer output during testing."""
     # note the following is actually tested, but the "false" case isn't seen by the "coverage" tool
@@ -79,7 +79,7 @@ def _unraisablehook(unraisable):  # pragma: no cover
 class CustomHandlers:
     """A context manager that installs and removes this module's custom error and warning handlers.
 
-    This modifies ``warnings.showwarning``, ``sys.excepthook``, and ``sys.unraisablehook``."""
+    This modifies :func:`warnings.showwarning`, :func:`sys.excepthook`, and :func:`sys.unraisablehook`."""
     def __enter__(self):
         self.showwarning_orig = warnings.showwarning
         warnings.showwarning = _showwarning
@@ -93,7 +93,7 @@ class CustomHandlers:
         return False  # raise exception if any
 
 def init_handlers() -> None:
-    """Set up the ``CustomHandlers`` once and don't change them back."""
+    """Set up the :class:`CustomHandlers` once and don't change them back."""
     CustomHandlers().__enter__()
 
 def javaishstacktrace(ex :BaseException) -> Generator[str, None, None]:
@@ -101,7 +101,7 @@ def javaishstacktrace(ex :BaseException) -> Generator[str, None, None]:
 
     Compared to Java, the order of exceptions is reversed, so it reads more like a stack.
 
-    ``AssertionError``s are treated specially in that the line of source code that caused them is printed.
+    :exc:`AssertionError` is treated specially in that the line of source code that caused them is printed.
     """
     causes = [ex]
     while ex.__cause__:

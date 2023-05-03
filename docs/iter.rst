@@ -1,5 +1,12 @@
-#!python3
-"""Datetime Utility Functions
+A Few Useful Iterators
+======================
+
+Note the iterator ``gray_product`` that used to be in this module
+has been merged into ``more_itertools`` as of version 9.1.0.
+
+.. automodule:: igbpyutils.iter
+   :members:
+   :undoc-members:
 
 Author, Copyright, and License
 ------------------------------
@@ -19,22 +26,4 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program. If not, see https://www.gnu.org/licenses/
-"""
-from datetime import timedelta
 
-def timedelta_str(td :timedelta) -> str:
-    """Simple replacement for timedelta's default string formatting with nicer output of negative deltas.
-
-        >>> str(timedelta(hours=-1))
-        '-1 day, 23:00:00'
-        >>> timedelta_str(timedelta(hours=-1))
-        '-1:00:00'
-
-    Possible alternatives:
-    - https://dateutil.readthedocs.io/en/stable/relativedelta.html
-    - https://pypi.org/project/readabledelta/
-    """
-    return '-' + str(-td) if td < timedelta(0) else str(td)
-
-#TODO Later: datetime truncate
-#TODO Later: datetime fromisoformat (backport support for Z suffix)

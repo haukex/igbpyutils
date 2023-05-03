@@ -1,5 +1,5 @@
 #!python3
-"""Library with some file-related utility functions.
+"""File-Related Utility Functions
 
 Author, Copyright, and License
 ------------------------------

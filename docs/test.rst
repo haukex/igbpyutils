@@ -1,9 +1,15 @@
-#!python3
-"""Datetime Utility Functions
+Utilities for Testing
+=====================
+
+Note the ``MyNamedTempFile`` utility has been moved to ``igbpyutils.file.NamedTempFileDeleteLater``.
+
+.. automodule:: igbpyutils.test
+   :members:
+   :undoc-members:
 
 Author, Copyright, and License
 ------------------------------
-Copyright (c) 2022-2023 Hauke Daempfling (haukex@zero-g.net)
+Copyright (c) 2023 Hauke Daempfling (haukex@zero-g.net)
 at the Leibniz Institute of Freshwater Ecology and Inland Fisheries (IGB),
 Berlin, Germany, https://www.igb-berlin.de/
 
@@ -19,22 +25,4 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program. If not, see https://www.gnu.org/licenses/
-"""
-from datetime import timedelta
 
-def timedelta_str(td :timedelta) -> str:
-    """Simple replacement for timedelta's default string formatting with nicer output of negative deltas.
-
-        >>> str(timedelta(hours=-1))
-        '-1 day, 23:00:00'
-        >>> timedelta_str(timedelta(hours=-1))
-        '-1:00:00'
-
-    Possible alternatives:
-    - https://dateutil.readthedocs.io/en/stable/relativedelta.html
-    - https://pypi.org/project/readabledelta/
-    """
-    return '-' + str(-td) if td < timedelta(0) else str(td)
-
-#TODO Later: datetime truncate
-#TODO Later: datetime fromisoformat (backport support for Z suffix)

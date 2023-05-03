@@ -11,16 +11,7 @@ Python version.
 This library is intended to contain more general-purpose tools and
 cover a slightly broader range of Python versions, currently Python 3.9 to 3.11.
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+The documentation is available at <https://igbpyutils.readthedocs.io/>.
 
 
 Author, Copyright, and License

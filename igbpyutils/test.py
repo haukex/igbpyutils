@@ -1,5 +1,5 @@
 #!python3
-"""Some utilities for testing.
+"""Utilities for Testing
 
 Note the ``MyNamedTempFile`` utility has been moved to ``igbpyutils.file.NamedTempFileDeleteLater``.
 

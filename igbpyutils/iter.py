@@ -1,5 +1,5 @@
 #!python3
-"""A few useful iterators.
+"""A Few Useful Iterators
 
 Note the iterator ``gray_product`` that used to be in this module
 has been merged into ``more_itertools`` as of version 9.1.0.
