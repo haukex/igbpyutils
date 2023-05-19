@@ -73,7 +73,8 @@ class TestIterTools(unittest.TestCase):
 
     def test_tee_zip(self):
         """Make sure that the ``tee``-then-``zip`` pattern works as expected,
-        that is, that it really does consume the input one-at-a-time."""
+        that is, that it really does consume the input one-at-a-time.
+        **However**, see the "better variant" in the code below!!"""
         from itertools import tee
         totest = []
         def gen():
@@ -87,6 +88,16 @@ class TestIterTools(unittest.TestCase):
                 yield out
         g1, g2 = tee(gen())
         for i, o in zip_strict(g1, trans(g2)):
+            totest.append(f"got {i}-{o}")
+        self.assertEqual( totest, [
+            'gen 1', 'trans 1-A', 'got 1-A',
+            'gen 2', 'trans 2-B', 'got 2-B',
+            'gen 3', 'trans 3-C', 'got 3-C'] )
+        totest.clear()
+        # The better variant by Stefan Pochmann at https://stackoverflow.com/a/76271631
+        # (the only minor downside being that PyChram detects "i" as "referenced before assignment")
+        for o in trans( i := x for x in gen() ):
+            # noinspection PyUnboundLocalVariable
             totest.append(f"got {i}-{o}")
         self.assertEqual( totest, [
             'gen 1', 'trans 1-A', 'got 1-A',

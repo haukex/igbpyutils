@@ -26,7 +26,7 @@ along with this program. If not, see https://www.gnu.org/licenses/
 import sys
 from collections.abc import Sized, Iterator, Iterable, Callable, Generator
 from typing import TypeVar, Generic, Optional, Any, overload
-from itertools import tee, zip_longest
+from itertools import zip_longest
 
 _marker = object()
 _T0 = TypeVar('_T0')
@@ -110,6 +110,8 @@ def is_unique_everseen(iterable :Iterable[_V], *, key :Optional[Callable[[_V], A
             else:
                 yield False
 
+# this is for "element", probably because PyCharm doesn't detect element:=x
+# noinspection PyUnboundLocalVariable
 def no_duplicates(iterable :Iterable[_V], *, key :Optional[Callable[[_V], Any]] = None, name :str="item") -> Generator[_V, None, None]:
     """Raise a :exc:`ValueError` if there are any duplicate elements in the
     input iterable.
@@ -127,7 +129,6 @@ def no_duplicates(iterable :Iterable[_V], *, key :Optional[Callable[[_V], Any]] 
     The implementation is very similar :func:`more_itertools.unique_everseen`
     and is subject to the same performance considerations.
     """
-    it1, it2 = tee(iterable)
-    for element, unique in zip_strict(it1, is_unique_everseen(it2, key=key)):
+    for unique in is_unique_everseen( (element:=x for x in iterable), key=key ):
         if not unique: raise ValueError(f"duplicate {name}: {element!r}")
         else: yield element
