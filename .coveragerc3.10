@@ -1,3 +1,4 @@
+# .coveragerc for Python 3.10
 [report]
 exclude_lines =
     pragma: no cover
