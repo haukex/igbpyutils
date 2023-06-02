@@ -3,7 +3,7 @@ set -euo pipefail
 # Utility script for running tests/coverage on all Python versions locally
 cd "$(dirname "${BASH_SOURCE[0]}")" || exit 1
 if [ "$OSTYPE" == "msys" ]; then  # e.g. Git bash on Windows
-  for PY_VER in Python39 Python310 Python311; do
+  for PY_VER in Python39 Python310 Python311 Python312; do
     PYTHON="$HOME/AppData/Local/Programs/Python/$PY_VER/python"
     echo "===== Running" "$PYTHON" "====="
     PYTHONWARNDEFAULTENCODING=1 "$PYTHON" -m unittest "$@"
