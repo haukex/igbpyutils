@@ -9,12 +9,10 @@ jobs:
       matrix:
         # https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json
         python-version: ["3.9", "3.10", "3.11", "3.12"]
-    env:
-      PYTHONWARNDEFAULTENCODING: 1
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4.6.0
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
           allow-prereleases: true
@@ -25,6 +23,7 @@ jobs:
           pip install -r requirements.txt
       - name: Python Tests with Coverage
         env:
+          PYTHONWARNDEFAULTENCODING: 1
           PYTHONWARNINGS: error
         run: coverage run --rcfile=.coveragerc${{ matrix.python-version }} --branch -m unittest -v
       - name: Check Coverage
@@ -38,14 +37,11 @@ jobs:
       fail-fast: false
       matrix:
         os: [Windows, macOS]
-        # https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json
         python-version: ["3.9", "3.10", "3.11", "3.12"]
-    env:
-      PYTHONWARNDEFAULTENCODING: 1
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4.6.0
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
           allow-prereleases: true
@@ -56,5 +52,6 @@ jobs:
           pip install -r requirements.txt
       - name: Python Tests
         env:
+          PYTHONWARNDEFAULTENCODING: 1
           PYTHONWARNINGS: error
         run: python -m unittest -v
