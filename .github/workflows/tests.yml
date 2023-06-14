@@ -1,18 +1,47 @@
 name: Python Tests and Coverage
 on: [push, pull_request]
 jobs:
-  tests:
-    name: CPython ${{ matrix.python-version }} on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}-latest
+  tests-linux:
+    name: CPython ${{ matrix.python-version }} on Ubuntu Linux with Coverage and Mypy
+    runs-on: Ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        os: [Ubuntu, Windows, macOS]
         # https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json
         python-version: ["3.9", "3.10", "3.11", "3.12"]
     env:
       PYTHONWARNDEFAULTENCODING: 1
-      PYTHONWARNINGS: error
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4.6.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          allow-prereleases: true
+      - name: Install Dependencies
+        run: |
+          python --version
+          python -m pip install --upgrade pip wheel coverage mypy
+          pip install -r requirements.txt
+      - name: Python Tests with Coverage
+        env:
+          PYTHONWARNINGS: error
+        run: coverage run --rcfile=.coveragerc${{ matrix.python-version }} --branch -m unittest -v
+      - name: Check Coverage
+        run: coverage report --rcfile=.coveragerc${{ matrix.python-version }} --show-missing --fail-under=100
+      - name: Mypy
+        run: mypy --python-version ${{ matrix.python-version }} igbpyutils tests
+  tests-nonlinux:
+    name: CPython ${{ matrix.python-version }} on ${{ matrix.os }} (no Coverage or Mypy)
+    runs-on: ${{ matrix.os }}-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [Windows, macOS]
+        # https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+    env:
+      PYTHONWARNDEFAULTENCODING: 1
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
@@ -25,13 +54,7 @@ jobs:
           python --version
           python -m pip install --upgrade pip wheel
           pip install -r requirements.txt
-      - name: Python Tests w/o Coverage or mypy (for non-Linux)
-        if: matrix.os != 'Ubuntu'
+      - name: Python Tests
+        env:
+          PYTHONWARNINGS: error
         run: python -m unittest -v
-      - name: Python Tests with Coverage and mypy (for Linux)
-        if: matrix.os == 'Ubuntu'
-        run: |
-          pip install coverage mypy && \
-          coverage run    --rcfile=.coveragerc${{ matrix.python-version }} --branch -m unittest -v && \
-          coverage report --rcfile=.coveragerc${{ matrix.python-version }} --show-missing --fail-under=100 && \
-          mypy --python-version ${{ matrix.python-version }} igbpyutils tests
