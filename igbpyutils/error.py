@@ -112,12 +112,12 @@ def javaishstacktrace(ex :BaseException) -> Generator[str, None, None]:
         r = ex_repr(e)
         if isinstance(e, AssertionError):  # for "assert"s we'd like to see the source that caused it
             assert e.__traceback__  # for some reason, the coverage tool is reporting the following `if` is false on 3.9?
-            if e.__traceback__:  # cover-not-le3.9
+            if e.__traceback__:  # cover-req-ge3.10
                 lines = inspect.getinnerframes(e.__traceback__)[-1].code_context
                 if lines:
                     r += f" [{ lines[0].strip() if len(lines)==1 else ''.join(lines) !r}]"
                 else: pass  # pragma: no cover
-            else: pass  # cover-not-ge3.10
+            else: pass  # cover-req-lt3.10
         yield r if first else "which caused: " + r
         for item in reversed( extract_tb(e.__traceback__) ):
             try:

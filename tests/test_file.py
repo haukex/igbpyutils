@@ -59,9 +59,9 @@ class TestFileUtils(unittest.TestCase):
 
     def test_pushd(self):
         def realpath(pth):
-            if sys.hexversion>=0x030A00F0:  # cover-not-le3.9
+            if sys.hexversion>=0x030A00F0:  # cover-req-ge3.10
                 return os.path.realpath(pth, strict=True)
-            else:  # cover-not-ge3.10
+            else:  # cover-req-lt3.10
                 return os.path.realpath(pth)
         prevwd = realpath(os.getcwd())
         with (TemporaryDirectory() as td1, TemporaryDirectory() as td2):
@@ -242,14 +242,14 @@ class TestFileUtils(unittest.TestCase):
             self.assertTrue( Path(tf2.name).exists() )
         self.assertFalse( Path(tf2.name).exists() )
         #TODO Later: Once 3.12 is released, change the following to 0x030C00F0
-        if sys.hexversion>=0x030C0000:  # cover-not-le3.11
+        if sys.hexversion>=0x030C0000:  # cover-req-ge3.12
             # noinspection PyArgumentList
             with NamedTemporaryFile(delete=True, delete_on_close=False) as tf3:
                 tf3.write(b'Quz')
                 tf3.close()
                 self.assertTrue( Path(tf3.name).exists() )
             self.assertFalse( Path(tf3.name).exists() )
-        else: pass  # cover-not-ge3.12
+        else: pass  # cover-req-lt3.12
 
 if __name__ == '__main__':  # pragma: no cover
     unittest.main()

@@ -78,7 +78,7 @@ def autoglob(files :Iterable[str], *, force :bool=False) -> Generator[str, None,
     else:
         yield from files
 
-class Pushd:  # cover-not-ge3.11
+class Pushd:  # cover-req-lt3.11
     """A context manager that temporarily changes the current working directory."""
     def __init__(self, newdir :Filename):
         self.newdir = newdir
@@ -89,10 +89,10 @@ class Pushd:  # cover-not-ge3.11
     def __exit__(self, exc_type, exc_val, exc_tb):
         os.chdir(self.prevdir)
         return False  # raise exception if any
-if sys.hexversion>=0x030B00F0:  # cover-not-le3.10
+if sys.hexversion>=0x030B00F0:  # cover-req-ge3.11
     import contextlib
     Pushd = contextlib.chdir  # type: ignore
-else: pass  # cover-not-ge3.11
+else: pass  # cover-req-lt3.11
 
 def filetypestr(st :os.stat_result) -> str:
     """Return a string naming the file type reported by :func:`os.stat`."""
@@ -194,13 +194,13 @@ def replace_symlink(src :Filename, dst :Filename, missing_ok :bool=False):
 
 # noinspection PyPep8Naming
 @contextmanager
-def NamedTempFileDeleteLater(*args, **kwargs) -> Generator:  # cover-not-ge3.12
+def NamedTempFileDeleteLater(*args, **kwargs) -> Generator:  # cover-req-lt3.12
     """A :func:`~tempfile.NamedTemporaryFile` that is unlinked on context manager exit, not on close."""
     tf = NamedTemporaryFile(*args, **kwargs, delete=False)  # type: ignore
     try: yield tf
     finally: os.unlink(tf.name)
 #TODO Later: Once 3.12 is released, change the following to 0x030C00F0
-if sys.hexversion>=0x030C0000:  # cover-not-le3.11
+if sys.hexversion>=0x030C0000:  # cover-req-ge3.12
     from functools import partial
     NamedTempFileDeleteLater = partial(NamedTemporaryFile, delete=True, delete_on_close=False)  # type: ignore
-else: pass  # cover-not-ge3.12
+else: pass  # cover-req-lt3.12

@@ -2,6 +2,6 @@
 [report]
 exclude_lines =
     pragma: no cover
-    cover-not-ge3\.10
-    cover-not-le3\.10
-    cover-not-le3\.11
+    cover-req-lt3\.10
+    cover-req-ge3\.11
+    cover-req-ge3\.12
