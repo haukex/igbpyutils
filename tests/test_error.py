@@ -28,7 +28,7 @@ import subprocess
 import inspect
 from contextlib import redirect_stderr
 from pathlib import Path
-from warnings import warn
+from warnings import warn, simplefilter, catch_warnings
 from igbpyutils.error import running_in_unittest, javaishstacktrace, CustomHandlers, init_handlers, extype_fullname, ex_repr
 # noinspection PyProtectedMember
 from igbpyutils.error import _basepath
@@ -121,7 +121,8 @@ class TestErrorUtils(unittest.TestCase):
                 tuple(javaishstacktrace(ex)) )
 
     def test_customwarn(self):
-        with redirect_stderr(io.StringIO()) as s:
+        with redirect_stderr(io.StringIO()) as s, catch_warnings():
+            simplefilter('default')
             warnline = inspect.stack()[0].lineno
             warn("Test 1")
             with CustomHandlers(): warn("Test 2"); \
