@@ -137,7 +137,7 @@ def replacer(file :Filename, *, binary :bool=False, encoding=None, errors=None, 
     With this context manager, a temporary file is created in the same directory as the original file.
     The context manager gives you two file handles: the input file, and the output file, the latter
     being the temporary file. You can then read from the input file and write to the output file.
-    When the context manager is exited, it will replace the input file over the temporary file.
+    When the context manager is exited, it will replace the input file with the temporary file.
     If an error occurs in the context manager, the temporary file is unlinked and the original file left unchanged.
 
     Depending on the OS and file system, the :func:`os.replace` used here *may* be an atomic operation.

@@ -58,7 +58,7 @@ else: pass  # cover-req-lt3.10
 
 _T = TypeVar('_T', covariant=True)
 class SizedCallbackIterator(Generic[_T], Sized, Iterator[_T]):
-    """Wrapper to add :func:`len` support to an iterator.
+    """Wrapper to add :func:`len` support and a callback to an iterator.
 
     For example, this can be used to wrap a generator which has a known output length
     (e.g. if it returns exactly one item per input item), so that it can then
