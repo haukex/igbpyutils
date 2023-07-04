@@ -1,7 +1,0 @@
-# .coveragerc for Python 3.11
-[report]
-exclude_lines =
-    pragma: no cover
-    cover-req-lt3\.10
-    cover-req-lt3\.11
-    cover-req-ge3\.12

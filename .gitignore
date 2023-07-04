@@ -1,6 +1,7 @@
 __pycache__/
 .ipynb_checkpoints/
 /.coverage
+/.coveragerc3.*
 /htmlcov/
 /.idea/
 /dist/

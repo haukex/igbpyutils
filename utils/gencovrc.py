@@ -28,16 +28,32 @@ import argparse
 from pathlib import Path
 
 parser = argparse.ArgumentParser(description='Generate .coveragerc3.X files')
+parser.add_argument('-f','--forver',metavar='VERSION', help="only generate for this version")
+parser.add_argument('-q','--quiet',help="Don't output informational messages",action="store_true")
 parser.add_argument('min_ver', type=int, metavar="MINVER", help="3.N minimum version (inclusive)")
 parser.add_argument('max_ver', type=int, metavar="MAXVER", help="3.M maximum version (exclusive)")
 args = parser.parse_args()
 
 VERSIONS = range(args.min_ver, args.max_ver)
+if args.forver:
+    forver = -1
+    if re.fullmatch(r'''\A[0-9]+\Z''', args.forver):
+        forver = int(args.forver)
+    elif m := re.fullmatch(r'''\A3.([0-9]+)\Z''', args.forver):
+        forver = int(m.group(1))
+    else:
+        parser.error("--forver must be either 3.X format or minor version number only")
+    if forver not in VERSIONS:
+        parser.error("--forver must be in the MINVER and MAXVER range")
+    RCFILES = (forver,)
+else:
+    RCFILES = VERSIONS
 
-for vc in VERSIONS:
+for vc in RCFILES:
     fn = Path(__file__).parent.parent / f".coveragerc3.{vc}"
     with fn.open('w', encoding='ASCII', newline='\n') as fh:
         print(f"# .coveragerc for Python 3.{vc}\n[report]\nexclude_lines =\n    pragma: no cover", file=fh)
         for v in VERSIONS[1:]:
             print(f"    cover-req-" + re.escape(f"{'ge' if v>vc else 'lt'}3.{v}"), file=fh)
-    print(f"Wrote {fn.name}")
+    if not args.quiet:
+        print(f"Wrote {fn.name}")
