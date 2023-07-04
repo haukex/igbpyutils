@@ -21,3 +21,4 @@ Making a Release
 - `python3 -m build`
 - `twine upload dist/igbpyutils-*.tar.gz`
 - Add new release on GitHub
+- `git clean -dxf dist *.egg-info`
