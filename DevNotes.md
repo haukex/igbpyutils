@@ -11,6 +11,7 @@ Documentation
 Making a Release
 ----------------
 
+- Update `docs/changelog.rst`
 - Update version number everywhere
 - `git commit`
 - `git push`

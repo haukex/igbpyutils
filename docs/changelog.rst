@@ -1,18 +1,33 @@
-Error Handling and Formatting Utilities
-=======================================
+Changelog for ``igbpyutils``
+============================
 
-This module primarily provides :func:`~igbpyutils.error.javaishstacktrace` and a custom version of
-:func:`warnings.showwarning`, both of which produce somewhat shorter messages than the default Python messages.
-They can be set up via the context manager :class:`~igbpyutils.error.CustomHandlers` or, more typically, via a
-call to :func:`~igbpyutils.error.init_handlers` at the beginning of the script.
+v0.0.7 - not yet released
+    - Added :class:`igbpyutils.file.BinaryStream`
 
-.. automodule:: igbpyutils.error
-   :members:
-   :undoc-members:
+v0.0.6 - Wed May 3 2023
+    - Minor tweak to documentation generation only
+
+v0.0.5 - Wed May 3 2023
+    - Documentation updates only
+
+v0.0.4 - Wed May 3 2023
+    - Exposed a few more functions in the :mod:`igbpyutils.error` API
+
+v0.0.3 - Sun Apr 16 2023
+    - Added :mod:`igbpyutils.dt`
+
+v0.0.2 - Sat Apr 15 2023
+    - Added :mod:`igbpyutils.error`
+
+v0.0.1 - Fri Apr 14 2023
+    - First release.
+
+Note this changelog covers user-visible changes only, internal changes
+such as for testing are not listed, and not all documentation updates.
 
 Author, Copyright, and License
 ------------------------------
-Copyright (c) 2022-2023 Hauke Daempfling (haukex@zero-g.net)
+Copyright (c) 2023 Hauke Daempfling (haukex@zero-g.net)
 at the Leibniz Institute of Freshwater Ecology and Inland Fisheries (IGB),
 Berlin, Germany, https://www.igb-berlin.de/
 

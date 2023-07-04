@@ -2,7 +2,8 @@
 """A Few Useful Iterators
 
 Note the iterator "``gray_product``" that used to be in this module
-has been merged into :mod:`more_itertools` as of its version 9.1.0.
+has been merged into :mod:`more_itertools` as of its version 9.1.0
+as :func:`~more_itertools.gray_product`.
 
 Author, Copyright, and License
 ------------------------------
@@ -46,7 +47,9 @@ def zip_strict(
     *iterables: Iterable[_T0],
 ) -> Iterator[tuple[_T0, ...]]: ...  # pragma: no cover
 def zip_strict(*iterables):  # cover-req-lt3.10
-    """Like Python's ``zip``, but requires all iterables to return the same number of items."""
+    """Like Python's ``zip``, but requires all iterables to return the same number of items.
+
+    On Python >=3.10, this simply calls :func:`zip` with ``strict=True``."""
     for combo in zip_longest(*iterables, fillvalue=_marker):
         if any( v is _marker for v in combo ):
             raise ValueError("Iterables have different lengths")

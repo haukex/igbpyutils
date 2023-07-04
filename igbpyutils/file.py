@@ -35,10 +35,15 @@ from typing import Union
 from collections.abc import Generator, Iterable
 
 Filename = Union[str, os.PathLike]
+"""A type to represent filenames."""
 
 BinaryStream = Union[typing.IO[bytes], io.RawIOBase, io.BufferedIOBase, GzipFile]
+"""A type to represent binary file handles."""
 
 AnyPaths = Union[ Filename, bytes, Iterable[ Union[Filename, bytes] ] ]
+"""A type to represent any path or iterable of paths.
+
+Can be converted to :class:`~pathlib.Path` objects with :func:`to_Paths`."""
 @singledispatch
 def _topath(item :Union[Filename,bytes]):
     raise TypeError(f"I don't know how to covert this to a Path: {item!r}")
@@ -69,7 +74,23 @@ def _(paths :os.PathLike) -> Generator[Path, None, None]:
     yield _topath(paths)
 
 def autoglob(files :Iterable[str], *, force :bool=False) -> Generator[str, None, None]:
-    """In Windows, automatically apply :func:`~glob.glob` and :func:`~os.path.expanduser`, otherwise don't change the input."""
+    """In Windows, automatically apply :func:`~glob.glob` and :func:`~os.path.expanduser`, otherwise don't change the input.
+
+    For example, take the following script:
+
+    >>> import argparse
+    ... from igbpyutils.file import autoglob
+    ... parser = argparse.ArgumentParser(description='Example')
+    ... parser.add_argument('files', metavar="FILE", help="Files", nargs="+")
+    ... args = parser.parse_args()
+    ... paths = autoglob(args.files)
+
+    On a normal \\*NIX shell, calling this script as ``python3 script.py ~/*.py`` would result in
+    ``args.files`` being a list of ``"/home/username/filename.py"`` strings if such files exist, or
+    otherwise a single element of ``"/home/username/*.py"``. However, in a Windows ``cmd.exe`` shell,
+    the aforementioned command always results in ``args.files`` being ``['~/*.py']``. This function
+    fixes that, such that the behavior on Windows is the same as on Linux.
+    """
     from glob import glob
     from os.path import expanduser
     if sys.platform.startswith('win32') or force:
@@ -84,7 +105,9 @@ def autoglob(files :Iterable[str], *, force :bool=False) -> Generator[str, None,
         yield from files
 
 class Pushd:  # cover-req-lt3.11
-    """A context manager that temporarily changes the current working directory."""
+    """A context manager that temporarily changes the current working directory.
+
+    On Python >=3.11, this is simply an alias for :func:`contextlib.chdir`."""
     def __init__(self, newdir :Filename):
         self.newdir = newdir
     def __enter__(self):
@@ -200,7 +223,10 @@ def replace_symlink(src :Filename, dst :Filename, missing_ok :bool=False):
 # noinspection PyPep8Naming
 @contextmanager
 def NamedTempFileDeleteLater(*args, **kwargs) -> Generator:  # cover-req-lt3.12
-    """A :func:`~tempfile.NamedTemporaryFile` that is unlinked on context manager exit, not on close."""
+    """A :func:`~tempfile.NamedTemporaryFile` that is unlinked on context manager exit, not on close.
+
+    On Python >=3.12, this simply calls :func:`tempfile.NamedTemporaryFile` with ``delete=True``
+    and the new ``delete_on_close=False``."""
     tf = NamedTemporaryFile(*args, **kwargs, delete=False)  # type: ignore
     try: yield tf
     finally: os.unlink(tf.name)

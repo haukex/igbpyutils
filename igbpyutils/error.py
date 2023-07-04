@@ -1,6 +1,11 @@
 #!python3
 """Error Handling and Formatting Utilities
 
+This module primarily provides :func:`~igbpyutils.error.javaishstacktrace` and a custom version of
+:func:`warnings.showwarning`, both of which produce somewhat shorter messages than the default Python messages.
+They can be set up via the context manager :class:`~igbpyutils.error.CustomHandlers` or, more typically, via a
+call to :func:`~igbpyutils.error.init_handlers` at the beginning of the script.
+
 Author, Copyright, and License
 ------------------------------
 Copyright (c) 2022-2023 Hauke Daempfling (haukex@zero-g.net)
