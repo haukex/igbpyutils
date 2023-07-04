@@ -13,6 +13,7 @@ Making a Release
 
 - Update `docs/changelog.rst`
 - Update version number everywhere
+- Try building the docs (`make clean all` in `docs` subdir)
 - `git commit`
 - `git push`
 - Wait for tests on GitHub to pass
