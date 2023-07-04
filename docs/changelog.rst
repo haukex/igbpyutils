@@ -1,6 +1,9 @@
 Changelog for ``igbpyutils``
 ============================
 
+v0.0.9 - not yet released
+    - ...
+
 v0.0.8 - Tue Jul  4 2023
     - Fixed changelog
 

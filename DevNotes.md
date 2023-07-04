@@ -20,6 +20,7 @@ Making a Release
 - `git tag vX.X.X`
 - `git push --tags`
 - `python3 -m build`
+- Optional: inspect the package with `tar tzvf ...`
 - `twine upload dist/igbpyutils-*.tar.gz`
 - Add new release on GitHub
 - `git clean -dxf dist *.egg-info`
