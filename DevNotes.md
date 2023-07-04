@@ -23,3 +23,4 @@ Making a Release
 - `twine upload dist/igbpyutils-*.tar.gz`
 - Add new release on GitHub
 - `git clean -dxf dist *.egg-info`
+- Add placeholder for next version to changelog

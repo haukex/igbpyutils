@@ -1,16 +1,19 @@
 Changelog for ``igbpyutils``
 ============================
 
-v0.0.7 - not yet released
+v0.0.8 - Tue Jul  4 2023
+    - Fixed changelog
+
+v0.0.7 - Tue Jul  4 2023
     - Added :class:`igbpyutils.file.BinaryStream`
 
-v0.0.6 - Wed May 3 2023
+v0.0.6 - Wed May  3 2023
     - Minor tweak to documentation generation only
 
-v0.0.5 - Wed May 3 2023
+v0.0.5 - Wed May  3 2023
     - Documentation updates only
 
-v0.0.4 - Wed May 3 2023
+v0.0.4 - Wed May  3 2023
     - Exposed a few more functions in the :mod:`igbpyutils.error` API
 
 v0.0.3 - Sun Apr 16 2023
