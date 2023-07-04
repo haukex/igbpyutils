@@ -24,6 +24,9 @@ import os
 import stat
 import sys
 import uuid
+import typing
+import io
+from gzip import GzipFile
 from pathlib import Path
 from contextlib import contextmanager
 from functools import singledispatch
@@ -32,6 +35,8 @@ from typing import Union
 from collections.abc import Generator, Iterable
 
 Filename = Union[str, os.PathLike]
+
+BinaryStream = Union[typing.IO[bytes], io.RawIOBase, io.BufferedIOBase, GzipFile]
 
 AnyPaths = Union[ Filename, bytes, Iterable[ Union[Filename, bytes] ] ]
 @singledispatch
