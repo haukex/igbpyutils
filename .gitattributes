@@ -1,3 +1,0 @@
-# GitHub appears to be misdetecting the language of these files
-# (https://github.com/github/linguist/blob/master/docs/overrides.md#detectable)
-/.coveragerc* -linguist-detectable
