@@ -34,6 +34,8 @@ from tempfile import NamedTemporaryFile
 from typing import Union
 from collections.abc import Generator, Iterable
 
+# Possible To-Do for Later: an idea: implement something like https://stackoverflow.com/q/12593576
+
 Filename = Union[str, os.PathLike]
 """A type to represent filenames."""
 
