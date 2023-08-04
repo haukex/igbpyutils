@@ -72,7 +72,7 @@ class TestIterTools(unittest.TestCase):
             tuple( zip_strict( *( tuple(x) for x in unzip(tbl2) ) ) )
 
     def test_transpose(self):
-        """Test to conform the difference between ``zip(*iter)`` and ``unzip(iter)``.
+        """Test to confirm the difference between ``zip(*iter)`` and ``unzip(iter)``.
 
         :func:`zip` reads the entire iterable and produces tuples, while :func:`more_itertools.unzip`
         produces iterators using :func:`itertools.tee` - but note that since this also buffers items,
