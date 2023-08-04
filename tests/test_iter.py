@@ -71,6 +71,37 @@ class TestIterTools(unittest.TestCase):
         with self.assertRaises(ValueError):
             tuple( zip_strict( *( tuple(x) for x in unzip(tbl2) ) ) )
 
+    def test_transpose(self):
+        """Test to conform the difference between ``zip(*iter)`` and ``unzip(iter)``.
+
+        :func:`zip` reads the entire iterable and produces tuples, while :func:`more_itertools.unzip`
+        produces iterators using :func:`itertools.tee` - but note that since this also buffers items,
+        it can also use significant memory."""
+        from more_itertools import unzip
+        totest = []
+        def gen():
+            tbl = (
+                ("One", "Abc", "Foo"),
+                ("Two", "Def", "Bar"),
+                ("Thr", "Ghi", "Quz"),
+            )
+            for row in tbl:
+                totest.append(f"gen {row!r}")
+                yield row
+        for t in zip_strict(*gen()):
+            self.assertIsInstance(t, tuple)
+            totest.append(f"got {t!r}")
+        expect = [
+            "gen ('One', 'Abc', 'Foo')", "gen ('Two', 'Def', 'Bar')", "gen ('Thr', 'Ghi', 'Quz')",
+            "got ('One', 'Two', 'Thr')", "got ('Abc', 'Def', 'Ghi')", "got ('Foo', 'Bar', 'Quz')",
+        ]
+        self.assertEqual(totest, expect)
+        totest = []
+        for t in unzip(gen()):
+            self.assertIsInstance(t, map)
+            totest.append(f"got {tuple(t)!r}")
+        self.assertEqual(totest, expect)
+
     def test_tee_zip(self):
         """Make sure that the ``tee``-then-``zip`` pattern works as expected,
         that is, that it really does consume the input one-at-a-time.
