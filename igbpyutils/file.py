@@ -30,7 +30,7 @@ from gzip import GzipFile
 from pathlib import Path
 from contextlib import contextmanager
 from functools import singledispatch
-from tempfile import NamedTemporaryFile
+from tempfile import NamedTemporaryFile, TemporaryDirectory
 from typing import Union
 from collections.abc import Generator, Iterable
 
@@ -192,8 +192,11 @@ def replacer(file :Filename, *, binary :bool=False, encoding=None, errors=None, 
     except NotImplementedError: pass  # pragma: no cover
     os.replace(tf.name, fname)
 
-def replace_symlink(src :Filename, dst :Filename, missing_ok :bool=False):
+def replace_symlink(src :Filename, dst :Filename, *, missing_ok :bool=False):
     """Attempt to atomically replace (or create) a symbolic link pointing to ``src`` named ``dst``.
+
+    This function works by trying to choose a temporary filename for the link in the destination directory,
+    and then replacing the target with that temporary link.
 
     Depending on the OS and file system, the :func:`os.replace` used here *may* be an atomic operation.
     However, the surrounding operations (e.g. checking if ``dst`` exists etc.) present a small
@@ -221,6 +224,28 @@ def replace_symlink(src :Filename, dst :Filename, missing_ok :bool=False):
     except BaseException:
         os.unlink(tf)
         raise
+
+def replace_link(src :Filename, dst :Filename, *, symbolic :bool=False):
+    """Attempt to atomically create or replace a hard or symbolic link pointing to ``src`` named ``dst``.
+
+    This function works by creating the link in a new temporary directory first,
+    thus offloading the responsibility for finding a fitting temporary name and
+    cleanup to :class:`~tempfile.TemporaryDirectory`.
+
+    Depending on the OS and file system, the :func:`os.replace` used here *may* be an atomic operation.
+    However, this function doesn't provide protection against multiple writers and is therefore
+    intended for files with a single writer and multiple readers.
+    Multiple writers will need to be coordinated with external locking mechanisms.
+    """
+    if os.name != 'posix':  # pragma: no cover
+        # Although in theory Python provides os.link and os.symlink on Windows, we don't support that here.
+        raise NotImplementedError("only available on POSIX systems")
+    # Reminder to self: DON'T Path.resolve() because that resolves symlinks
+    with TemporaryDirectory(dir=Path(dst).parent) as td:
+        tf = Path(td, Path(src).name)
+        if symbolic: os.symlink(src, tf)  # "Create a symbolic link pointing to src named dst."
+        else: os.link(src, tf)  # "Create a hard link pointing to src named dst."
+        os.replace(tf, dst)
 
 # noinspection PyPep8Naming
 @contextmanager

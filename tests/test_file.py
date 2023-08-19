@@ -28,7 +28,7 @@ import os
 import stat
 from pathlib import Path
 from tempfile import TemporaryDirectory, NamedTemporaryFile
-from igbpyutils.file import to_Paths, autoglob, Pushd, filetypestr, is_windows_filename_bad, replacer, replace_symlink, NamedTempFileDeleteLater
+from igbpyutils.file import to_Paths, autoglob, Pushd, filetypestr, is_windows_filename_bad, replacer, replace_symlink, replace_link, NamedTempFileDeleteLater
 
 class TestFileUtils(unittest.TestCase):
 
@@ -181,55 +181,139 @@ class TestFileUtils(unittest.TestCase):
             print(f"Skipping chmod test", file=sys.stderr)
 
     def test_replace_symlink(self):
-        if os.name == 'posix':
-            with TemporaryDirectory() as td:
-                tp = Path(td)
-                fx = tp/'x.txt'
-                fy = tp/'y.txt'
-                with fx.open('w', encoding='ASCII') as fh: fh.write("Hello, World\n")
-
-                def assert_state(linktarg :str, xtra :Optional[list[Path]]=None):
-                    if not xtra: xtra = []
-                    self.assertEqual( sorted(tp.iterdir()), sorted([fx,fy]+xtra) )
-                    self.assertTrue( fx.is_file() )
-                    self.assertTrue( fy.is_symlink() )
-                    self.assertEqual( os.readlink(fy), linktarg )
-
-                self.assertEqual( list(tp.iterdir()), [fx] )
-                with self.assertRaises(FileNotFoundError):
-                    replace_symlink('x.txt', fy)
-                self.assertEqual( list(tp.iterdir()), [fx] )
-
-                replace_symlink('x.txt', fy, missing_ok=True)  # create
-                assert_state('x.txt')
-                replace_symlink('x.txt', fy)  # replace
-                assert_state('x.txt')
-                replace_symlink(fx, fy)  # replace (slightly different target)
-                assert_state(str(fx))
-
-                # test naming collision
-                mockf = tp/'.y.txt_1'
-                mockf.touch()
-                mockcnt = 0
-                def mocked_uuid4():
-                    nonlocal mockcnt
-                    mockcnt += 1
-                    return mockcnt  # this is ok because we know it's called as str(uuid.uuid4())
-                with patch('igbpyutils.file.uuid.uuid4', new_callable=lambda:mocked_uuid4):
-                    replace_symlink(fx, fy)  # abs
-                assert_state(str(fx), [mockf])
-                mockf.unlink()
-
-                # force an error on os.replace
-                fz = tp/'zzz'
-                fz.mkdir()
-                with self.assertRaises(IsADirectoryError):
-                    replace_symlink(fx, fz)
-                assert_state(str(fx), [fz])
-
-        else:  # pragma: no cover
+        if os.name != 'posix':  # pragma: no cover
             with self.assertRaises(NotImplementedError):
                 replace_symlink('/tmp/foo', '/tmp/bar')
+            return
+
+        with TemporaryDirectory() as td:
+            tp = Path(td)
+            fx = tp/'x.txt'
+            fy = tp/'y.txt'
+            with fx.open('w', encoding='ASCII') as fh: fh.write("Hello, World\n")
+
+            def assert_state(linktarg :str, xtra :Optional[list[Path]]=None):
+                if not xtra: xtra = []
+                self.assertEqual( sorted(tp.iterdir()), sorted([fx,fy]+xtra) )
+                self.assertTrue( fx.is_file() )
+                self.assertTrue( fy.is_symlink() )
+                self.assertEqual( os.readlink(fy), linktarg )
+
+            self.assertEqual( list(tp.iterdir()), [fx] )
+            with self.assertRaises(FileNotFoundError):
+                replace_symlink('x.txt', fy)
+            self.assertEqual( list(tp.iterdir()), [fx] )
+
+            replace_symlink('x.txt', fy, missing_ok=True)  # create
+            assert_state('x.txt')
+            replace_symlink('x.txt', fy)  # replace
+            assert_state('x.txt')
+            replace_symlink(fx, fy)  # replace (slightly different target)
+            assert_state(str(fx))
+
+            # test naming collision
+            mockf = tp/'.y.txt_1'
+            mockf.touch()
+            mockcnt = 0
+            def mocked_uuid4():
+                nonlocal mockcnt
+                mockcnt += 1
+                return mockcnt  # this is ok because we know it's called as str(uuid.uuid4())
+            with patch('igbpyutils.file.uuid.uuid4', new_callable=lambda:mocked_uuid4):
+                replace_symlink(fx, fy)  # abs
+            self.assertEqual(mockcnt, 2)
+            assert_state(str(fx), [mockf])
+            mockf.unlink()
+
+            # force an error on os.replace
+            fz = tp/'zzz'
+            fz.mkdir()
+            with self.assertRaises(IsADirectoryError):
+                replace_symlink(fx, fz)
+            assert_state(str(fx), [fz])
+
+    def test_replace_link(self):
+        if os.name != 'posix':  # pragma: no cover
+            with self.assertRaises(NotImplementedError):
+                replace_link('/tmp/foo', '/tmp/bar')
+            return
+
+        def assert_hardlink(a :Path, b:Path):
+            self.assertTrue( a.is_file() )
+            self.assertTrue( b.is_file() )
+            ast = a.lstat()
+            bst = b.lstat()
+            self.assertEqual(ast.st_dev,  bst.st_dev)
+            self.assertEqual(ast.st_ino,  bst.st_ino)
+            self.assertEqual(ast.st_mode, bst.st_mode)
+            self.assertEqual(ast.st_uid,  bst.st_uid)
+            self.assertEqual(ast.st_gid,  bst.st_gid)
+            self.assertEqual(ast.st_nlink, 2)
+            self.assertEqual(bst.st_nlink, 2)
+
+        def assert_symlink(f :Path, ln: Path, t :str):
+            self.assertTrue( f.is_file() )
+            self.assertTrue( ln.is_symlink() )
+            self.assertEqual( os.readlink(ln), t )
+            self.assertEqual( f.resolve(strict=True), ln.resolve(strict=True) )
+
+        with TemporaryDirectory() as td:
+            tp = Path(td)
+            fx = tp/'x.txt'
+            fy = tp/'y.txt'
+            fz = tp/'z.txt'
+            with fx.open('w', encoding='ASCII') as fh: fh.write("Hello, World\n")
+            with fz.open('w', encoding='ASCII') as fh: fh.write("Testing 123\n")
+            self.assertEqual( sorted(tp.iterdir()), [fx, fz] )
+
+            replace_link(fx, fy)  # create
+            self.assertEqual( sorted(tp.iterdir()), [fx, fy, fz] )
+            assert_hardlink(fx, fy)
+
+            replace_link(fx, fy)  # replace
+            self.assertEqual( sorted(tp.iterdir()), [fx, fy, fz] )
+            assert_hardlink(fx, fy)
+
+            replace_link(fz, fy)  # replace with other
+            self.assertEqual( sorted(tp.iterdir()), [fx, fy, fz] )
+            assert_hardlink(fz, fy)
+            self.assertEqual( fx.lstat().st_nlink, 1 )
+
+            # force an error on os.replace
+            fd = tp/'ddd'
+            fd.mkdir()
+            with self.assertRaises(IsADirectoryError):
+                replace_link(fx, fd)
+            self.assertEqual( sorted(tp.iterdir()), [fd, fx, fy, fz] )
+
+            # now do symbolic links
+            fd.rmdir()
+            fy.unlink()
+            self.assertEqual( sorted(tp.iterdir()), [fx, fz] )
+
+            replace_link('x.txt', fy, symbolic=True)  # create
+            self.assertEqual( sorted(tp.iterdir()), [fx, fy, fz] )
+            assert_symlink(fx, fy, 'x.txt')
+
+            replace_link('x.txt', fy, symbolic=True)  # replace
+            self.assertEqual( sorted(tp.iterdir()), [fx, fy, fz] )
+            assert_symlink(fx, fy, 'x.txt')
+
+            replace_link(fx, fy, symbolic=True)  # replace with slightly different target
+            self.assertEqual( sorted(tp.iterdir()), [fx, fy, fz] )
+            assert_symlink(fx, fy, str(fx))
+
+            replace_link(fz, fy, symbolic=True)  # replace with different target
+            self.assertEqual( sorted(tp.iterdir()), [fx, fy, fz] )
+            assert_symlink(fz, fy, str(fz))
+
+            # force an error on os.replace
+            fd = tp/'ddd'
+            fd.mkdir()
+            with self.assertRaises(IsADirectoryError):
+                replace_link(fz, fd, symbolic=True)
+            self.assertEqual( sorted(tp.iterdir()), [fd, fx, fy, fz] )
+            assert_symlink(fz, fy, str(fz))
 
     def test_namedtempfiledellater(self):
         with NamedTemporaryFile() as tf1:
