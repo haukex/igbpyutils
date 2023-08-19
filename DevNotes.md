@@ -17,6 +17,8 @@ Making a Release
 - `git commit`
 - `git push`
 - Wait for tests on GitHub to pass
+- Check <https://readthedocs.org/projects/igbpyutils/> to make sure docs are building there
+	- TODO: Consider <https://github.com/actions/deploy-pages> instead
 - `git tag vX.X.X`
 - `git push --tags`
 - `python3 -m build`
