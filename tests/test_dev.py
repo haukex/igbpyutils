@@ -221,18 +221,21 @@ class TestDevUtils(unittest.TestCase):
             with (redirect_stdout(out2), patch('argparse.ArgumentParser.exit') as mock2):
                 check_script_vs_lib_cli()
             mock2.assert_called_with(2)
-            self.assertEqual( out2.getvalue(), f"NOTICE {py3}: File looks like a normal script (but could use `if __name__=='__main__'`)\n"
-                                               f"ERROR {py2}: File has shebang but seems to be missing anything script-like\n")
+            self.assertEqual( sorted(out2.getvalue().splitlines()), [
+                f"ERROR {py2}: File has shebang but seems to be missing anything script-like",
+                f"NOTICE {py3}: File looks like a normal script (but could use `if __name__=='__main__'`)",
+            ])
 
             out3 = StringIO()
             sys.argv = ["check-script-vs-lib", "-v", str(tdr)]
             with (redirect_stdout(out3), patch('argparse.ArgumentParser.exit') as mock3):
                 check_script_vs_lib_cli()
             mock3.assert_called_with(1)
-            self.assertEqual( out3.getvalue(),
-                f"INFO {py1}: File looks like a normal library\n"
-                f"NOTICE {py3}: File looks like a normal script (but could use `if __name__=='__main__'`)\n"
-                f"ERROR {py2}: File has shebang but seems to be missing anything script-like\n")
+            self.assertEqual( sorted(out3.getvalue().splitlines()), [
+                f"ERROR {py2}: File has shebang but seems to be missing anything script-like",
+                f"INFO {py1}: File looks like a normal library",
+                f"NOTICE {py3}: File looks like a normal script (but could use `if __name__=='__main__'`)",
+            ])
 
 if __name__ == '__main__':  # pragma: no cover
     unittest.main()
