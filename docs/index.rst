@@ -13,6 +13,7 @@ Documentation
     error
     dt
     test
+    dev
     changelog
 
 * :ref:`genindex`

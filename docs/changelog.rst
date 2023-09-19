@@ -1,8 +1,8 @@
 Changelog for ``igbpyutils``
 ============================
 
-v0.1.0 - not yet released
-    - ...
+v0.1.0 - Tue Sep 19 2023
+    - Added :mod:`igbpyutils.dev`
 
 v0.0.9 - Sat Aug 19 2023
     - Added :func:`igbpyutils.file.replace_link`
