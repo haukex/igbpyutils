@@ -1,10 +1,16 @@
 #!python3
 """Error Handling and Formatting Utilities
 
+Overview
+--------
+
 This module primarily provides :func:`~igbpyutils.error.javaishstacktrace` and a custom version of
 :func:`warnings.showwarning`, both of which produce somewhat shorter messages than the default Python messages.
 They can be set up via the context manager :class:`~igbpyutils.error.CustomHandlers` or, more typically, via a
 call to :func:`~igbpyutils.error.init_handlers` at the beginning of the script.
+
+Functions
+---------
 
 Author, Copyright, and License
 ------------------------------
@@ -26,10 +32,12 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see https://www.gnu.org/licenses/
 """
 import sys
+import asyncio
 import inspect
 import warnings
 import threading
 from collections.abc import Generator
+from typing import Any
 from pathlib import Path
 # noinspection PyPackageRequirements
 import __main__  # just to get __main__.__file__ below
@@ -86,11 +94,22 @@ def _threading_excepthook(args):  # pragma: no cover
     print(f"In thread {args.thread.name if args.thread else '<unknown>'}:", file=sys.stderr)
     for s in javaishstacktrace(args.exc_value): print(s, file=sys.stderr)
 
+def asyncio_exception_handler(loop, ctx :dict[str, Any]):  # pragma: no cover
+    """A custom version of :mod:`asyncio`'s ``loop.set_exception_handler()``."""
+    print(f"Exception in asyncio: {ctx['message']} ({loop=})", file=sys.stderr)
+    for key, val in ctx.items():
+        if key not in ('message','exception'):
+            print(f"\t{key}: {val!r}", file=sys.stderr)
+    if 'exception' in ctx:
+        for s in javaishstacktrace(ctx['exception']): print(s, file=sys.stderr)
+
 class CustomHandlers:
     """A context manager that installs and removes this module's custom error and warning handlers.
 
-    This modifies :func:`warnings.showwarning`, :func:`sys.excepthook`, :func:`sys.unraisablehook`, and
-    :func:`threading.excepthook`."""
+    This modifies :func:`warnings.showwarning`, :func:`sys.excepthook`, :func:`sys.unraisablehook`,
+    :func:`threading.excepthook`, and, if there's a running :mod:`asyncio` event loop,
+    sets its ``loop.set_exception_handler()`` to :func:`asyncio_exception_handler`. The latter can also
+    be done manually later if there is no running loop at the moment."""
     def __enter__(self):
         self.showwarning_orig = warnings.showwarning
         warnings.showwarning = _showwarning
@@ -98,12 +117,16 @@ class CustomHandlers:
         sys.unraisablehook = _unraisablehook
         self.prev_threading_excepthook = threading.excepthook  # threading.__excepthook__ was not added until 3.10
         threading.excepthook = _threading_excepthook
+        try: self.loop = asyncio.get_running_loop()
+        except RuntimeError: self.loop = None
+        else: self.loop.set_exception_handler(asyncio_exception_handler)  # pragma: no cover
         return self
     def __exit__(self, exc_type, exc_val, exc_tb):
         warnings.showwarning = self.showwarning_orig
         sys.excepthook = sys.__excepthook__
         sys.unraisablehook = sys.__unraisablehook__
         threading.excepthook = self.prev_threading_excepthook
+        if self.loop: self.loop.set_exception_handler(None)
         return False  # raise exception if any
 
 def init_handlers() -> None:

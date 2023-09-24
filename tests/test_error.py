@@ -35,6 +35,7 @@ from igbpyutils.error import _basepath
 import tests.error_test_funcs
 import tests.error_test_unraisable
 import tests.error_test_thread
+import tests.error_test_async
 
 class TestErrorUtils(unittest.TestCase):
 
@@ -145,11 +146,24 @@ class TestErrorUtils(unittest.TestCase):
         self.assertEqual(0, sp.returncode)
         self.assertEqual(b'', sp.stdout)
         self.assertRegex(sp.stderr.decode("ASCII"),
-             r'''\AIn thread .+:\r?\n'''
-             r'''RuntimeError\('Foo'\)\r?\n'''
-             r'''\tat error_test_thread.py:10 in testfunc1\r?\n'''
-             r'''\tat error_test_thread.py:7 in testfunc0\r?\n'''
-             r'''(?:\tat .+threading\.py.+\r?\n)+\Z''')
+            r'''\AIn thread .+:\r?\n'''
+            r'''RuntimeError\('Foo'\)\r?\n'''
+            r'''\tat error_test_thread.py:10 in testfunc1\r?\n'''
+            r'''\tat error_test_thread.py:7 in testfunc0\r?\n'''
+            r'''(?:\tat .+threading\.py.+\r?\n)+\Z''')
+
+    def test_asyncioexcept(self):
+        sp = subprocess.run([sys.executable, tests.error_test_async.__file__],
+            capture_output=True, cwd=Path(__file__).parent.parent, env=self.environ )
+        self.assertEqual(0, sp.returncode)
+        self.assertEqual(b'', sp.stdout)
+        self.assertRegex(sp.stderr.decode("ASCII"),
+            r'''\AException in asyncio: Task exception was never retrieved \(loop=.+\)\r?\n'''
+            r'''\tfuture: .+\r?\n'''
+            r'''RuntimeError\('Quz'\)\r?\n'''
+            r'''\tat error_test_async.py:11 in testfunc1\r?\n'''
+            r'''\tat error_test_async.py:8 in testfunc0\r?\n\Z''')
+
 
 if __name__ == '__main__':  # pragma: no cover
     unittest.main()
