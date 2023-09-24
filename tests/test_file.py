@@ -102,14 +102,14 @@ class TestFileUtils(unittest.TestCase):
             try:
                 (tp/'baz').symlink_to('foo')
             except OSError:  # pragma: no cover
-                print(f"Skipping symlink test", file=sys.stderr)
+                print(f"skip-symlink", end='.', file=sys.stderr)
             else:
                 self.assertEqual( 'symbolic link', filetypestr( os.lstat(tp/'baz') ) )
             if hasattr(os, 'mkfifo'):
                 os.mkfifo(tp/'quz')
                 self.assertEqual( 'FIFO (named pipe)', filetypestr( os.lstat(tp/'quz') ) )
             else:  # pragma: no cover
-                print("Skipping fifo test", file=sys.stderr)
+                print("skip-fifo", end='.', file=sys.stderr)
 
     def test_is_windows_filename_bad(self):
         self.assertFalse( is_windows_filename_bad("Hello.txt") )
@@ -178,7 +178,7 @@ class TestFileUtils(unittest.TestCase):
                 self.assertNotEqual( st.st_ino, orig_ino )
                 self.assertEqual( stat.S_IMODE(st.st_mode), 0o741 )
         else:   # pragma: no cover
-            print(f"Skipping chmod test", file=sys.stderr)
+            print(f"skip-chmod", end='.', file=sys.stderr)
 
     def test_replace_symlink(self):
         if os.name != 'posix':  # pragma: no cover
