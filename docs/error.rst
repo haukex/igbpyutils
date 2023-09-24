@@ -8,6 +8,7 @@ This module primarily provides :func:`~igbpyutils.error.javaishstacktrace` and a
 :func:`warnings.showwarning`, both of which produce somewhat shorter messages than the default Python messages.
 They can be set up via the context manager :class:`~igbpyutils.error.CustomHandlers` or, more typically, via a
 call to :func:`~igbpyutils.error.init_handlers` at the beginning of the script.
+This module also provides :func:`~igbpyutils.error.logging_config` for configuration of :mod:`logging`.
 
 Functions
 ---------

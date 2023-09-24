@@ -1,6 +1,8 @@
 Internal Development Notes
 --------------------------
 
+TODO: <https://mypy.readthedocs.io/en/stable/stubgen.html>
+
 Documentation
 -------------
 

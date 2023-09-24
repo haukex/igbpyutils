@@ -8,6 +8,7 @@ This module primarily provides :func:`~igbpyutils.error.javaishstacktrace` and a
 :func:`warnings.showwarning`, both of which produce somewhat shorter messages than the default Python messages.
 They can be set up via the context manager :class:`~igbpyutils.error.CustomHandlers` or, more typically, via a
 call to :func:`~igbpyutils.error.init_handlers` at the beginning of the script.
+This module also provides :func:`~igbpyutils.error.logging_config` for configuration of :mod:`logging`.
 
 Functions
 ---------
@@ -31,17 +32,22 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see https://www.gnu.org/licenses/
 """
+import io
 import sys
+import time
 import asyncio
 import inspect
+import logging
 import warnings
 import threading
 from collections.abc import Generator
-from typing import Any
+from typing import Any, Optional, Literal, TextIO, Union
+from logging import Formatter
 from pathlib import Path
 # noinspection PyPackageRequirements
 import __main__  # just to get __main__.__file__ below
 from traceback import extract_tb
+from igbpyutils.file import Filename
 
 def running_in_unittest() -> bool:
     """Attempt to detect if we're running under :mod:`unittest`.
@@ -164,3 +170,49 @@ def javaishstacktrace(ex :BaseException) -> Generator[str, None, None]:
             if fn.is_relative_to(_basepath): fn = fn.relative_to(_basepath)
             yield f"\tat {fn}:{item.lineno} in {item.name}"
         first = False
+
+class CustomFormatter(Formatter):
+    """This is a custom :class:`logging.Formatter` that logs errors using :func:`javaishstacktrace`.
+
+    It also has some better defaults for ``asctime`` formatting (mostly that it is GMT and output with a ``Z`` suffix).
+
+    :seealso: :func:`logging_config`"""
+    converter = time.gmtime
+    default_time_format = '%Y-%m-%d %H:%M:%S'
+    default_msec_format = '%s.%03dZ'
+    def formatException(self, ei :tuple) -> str:
+        return '\n'.join(javaishstacktrace(ei[1]))
+
+def logging_config(*,
+        level :int = logging.WARNING,
+        stream :Union[None, Literal[True], TextIO, io.TextIOBase] = None,
+        filename :Optional[Filename] = None,
+        fmt :Optional[str] = '[%(asctime)s] %(levelname)s %(name)s: %(message)s' ):
+    """A replacement for :func:`logging.basicConfig` that uses :class:`CustomFormatter` and has a few more useful defaults.
+
+    :param level: Set the root logger level to the specified level. Defaults to :data:`logging.WARNING`.
+    :param stream: Use the specified stream to initialize the :class:`~logging.StreamHandler`.
+        Can also be :obj:`True` to specify that :data:`sys.stderr` should be used (which is the default anyway,
+        except when a filename is specified).
+    :param filename: Specifies that a :class:`~logging.FileHandler` be created using the specified filename.
+    :param fmt: Use the specified format string for the handler(s).
+
+    Other defaults are: Files are always encoded with UTF-8, and any existing handlers are always removed.
+
+    Note I also recommend using :func:`logging.captureWarnings`."""
+    root = logging.getLogger()
+    for hnd in root.handlers[:]:  # attribute is not documented, but this is what logging.basicConfig does
+        root.removeHandler(hnd)
+        hnd.close()
+    if stream is None and filename is None or stream is True: stream = sys.stderr
+    handlers :list[logging.Handler] = []
+    if stream is not None:
+        handlers.append(logging.StreamHandler(stream))
+    if filename is not None:
+        handlers.append(logging.FileHandler(filename, encoding='UTF-8', errors='namereplace'))
+    assert handlers
+    fmtr = CustomFormatter(fmt=fmt)
+    for hnd in handlers:
+        hnd.setFormatter(fmtr)
+        root.addHandler(hnd)
+    root.setLevel(level)

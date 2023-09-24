@@ -4,7 +4,8 @@ Changelog for ``igbpyutils``
 Changelog
 ---------
 
-v0.1.1 - Sun Sep 24 2023
+v0.2.0 - Sun Sep 24 2023
+    - Added :class:`igbpyutils.error.CustomFormatter` and :func:`igbpyutils.error.logging_config`
     - Added custom :func:`threading.excepthook` to :class:`~igbpyutils.error.CustomHandlers`
     - Added :func:`igbpyutils.error.asyncio_exception_handler`
       (also added to :class:`~igbpyutils.error.CustomHandlers`)

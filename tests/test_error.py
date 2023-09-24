@@ -21,15 +21,19 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see https://www.gnu.org/licenses/
 """
 import unittest
+from unittest.mock import patch
 import io
 import sys
 import os
 import subprocess
 import inspect
-from contextlib import redirect_stderr
+from contextlib import redirect_stdout, redirect_stderr
 from pathlib import Path
+import logging
 from warnings import warn, simplefilter, catch_warnings
-from igbpyutils.error import running_in_unittest, javaishstacktrace, CustomHandlers, init_handlers, extype_fullname, ex_repr
+from igbpyutils.file import NamedTempFileDeleteLater
+from igbpyutils.error import (running_in_unittest, javaishstacktrace, CustomHandlers, init_handlers, extype_fullname,
+                              ex_repr, CustomFormatter, logging_config)
 # noinspection PyProtectedMember
 from igbpyutils.error import _basepath
 import tests.error_test_funcs
@@ -163,6 +167,58 @@ class TestErrorUtils(unittest.TestCase):
             r'''RuntimeError\('Quz'\)\r?\n'''
             r'''\tat error_test_async.py:11 in testfunc1\r?\n'''
             r'''\tat error_test_async.py:8 in testfunc0\r?\n\Z''')
+
+    def test_formatter(self):
+        msgs = io.StringIO()
+        logger = logging.getLogger("test_formatter")
+        logger.propagate = False
+        handler = logging.StreamHandler(msgs)
+        handler.setFormatter(CustomFormatter('[%(asctime)s] %(levelname)s %(name)s: %(message)s'))
+        logger.addHandler(handler)
+        logger.setLevel(logging.DEBUG)
+        exline = None
+        try:
+            exline = inspect.stack()[0].lineno + 1
+            raise RuntimeError("Boom")
+        except RuntimeError as ex:
+            with patch('time.time', return_value=1234567890.12345):
+                logger.error("Exception", exc_info=ex)
+        self.assertEqual( msgs.getvalue(), "[2009-02-13 23:31:30.123Z] ERROR test_formatter: Exception\n"
+            f"RuntimeError('Boom')\n\tat {self.mybasepath/'test_error.py'}:{exline} in test_formatter\n" )
+
+    @patch('time.time', return_value=1234567890.12345)
+    def test_logging_config(self, _):
+        logger = logging.getLogger("test_logging_config")
+        with (redirect_stdout(io.StringIO()) as out, redirect_stderr(io.StringIO()) as err):
+            logging_config()
+            logger.warning("Hello, World!")
+        self.assertEqual(out.getvalue(), '')
+        self.assertEqual(err.getvalue(), '[2009-02-13 23:31:30.123Z] WARNING test_logging_config: Hello, World!\n')
+        out = io.StringIO()
+        logging_config(stream=out)
+        logger.error("Bang")
+        self.assertEqual(out.getvalue(), '[2009-02-13 23:31:30.123Z] ERROR test_logging_config: Bang\n')
+        with NamedTempFileDeleteLater() as ntf:
+            ntf.close()
+            with (redirect_stdout(io.StringIO()) as out, redirect_stderr(io.StringIO()) as err):
+                logging_config(filename=ntf.name)
+                logger.critical("BOOM")
+                logging_config(filename=ntf.name, stream=True, level=logging.INFO,
+                               fmt='%(levelname)s at %(asctime)s in %(name)s: %(message)s')
+                logger.debug("Test")
+                logger.info("What's up?")
+                logging_config()
+                logger.info("Nope")
+                logger.warning("Hi there")
+            for hnd in logging.getLogger().handlers: hnd.close()  # so the file gets closed, needed on Windows to read the file
+            self.assertEqual(out.getvalue(), '')
+            self.assertEqual(err.getvalue(),
+                             "INFO at 2009-02-13 23:31:30.123Z in test_logging_config: What's up?\n"
+                             "[2009-02-13 23:31:30.123Z] WARNING test_logging_config: Hi there\n")
+            with open(ntf.name, encoding='UTF-8') as fh:
+                self.assertEqual(fh.read(),
+                                 '[2009-02-13 23:31:30.123Z] CRITICAL test_logging_config: BOOM\n'
+                                 "INFO at 2009-02-13 23:31:30.123Z in test_logging_config: What's up?\n")
 
 
 if __name__ == '__main__':  # pragma: no cover
