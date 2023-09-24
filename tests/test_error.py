@@ -34,6 +34,7 @@ from igbpyutils.error import running_in_unittest, javaishstacktrace, CustomHandl
 from igbpyutils.error import _basepath
 import tests.error_test_funcs
 import tests.error_test_unraisable
+import tests.error_test_thread
 
 class TestErrorUtils(unittest.TestCase):
 
@@ -135,6 +136,20 @@ class TestErrorUtils(unittest.TestCase):
             f'{__file__}:{warnline+3}: RuntimeWarning: Test 3\n  warn("Test 3", RuntimeWarning)\n'
             f'{__file__}:{warnline+4}: UserWarning: Test 4\n  warn("Test 4")\n'
             f'UserWarning: Test 5 at {self.mybasepath/"test_error.py"}:{warnline+5}\n', s.getvalue())
+
+    def test_threadexcept(self):
+        with self.assertRaises(RuntimeError):
+            tests.error_test_thread.testfunc0()
+        sp = subprocess.run([sys.executable, tests.error_test_thread.__file__],
+            capture_output=True, cwd=Path(__file__).parent.parent, env=self.environ )
+        self.assertEqual(0, sp.returncode)
+        self.assertEqual(b'', sp.stdout)
+        self.assertRegex(sp.stderr.decode("ASCII"),
+             r'''\AIn thread .+:\r?\n'''
+             r'''RuntimeError\('Foo'\)\r?\n'''
+             r'''\tat error_test_thread.py:10 in testfunc1\r?\n'''
+             r'''\tat error_test_thread.py:7 in testfunc0\r?\n'''
+             r'''(?:\tat .+threading\.py.+\r?\n)+\Z''')
 
 if __name__ == '__main__':  # pragma: no cover
     unittest.main()

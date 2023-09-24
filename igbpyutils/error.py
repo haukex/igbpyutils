@@ -28,6 +28,7 @@ along with this program. If not, see https://www.gnu.org/licenses/
 import sys
 import inspect
 import warnings
+import threading
 from collections.abc import Generator
 from pathlib import Path
 # noinspection PyPackageRequirements
@@ -81,20 +82,28 @@ def _unraisablehook(unraisable):  # pragma: no cover
     print(f'{err_msg}: {unraisable.object!r}')
     for s in javaishstacktrace(unraisable.exc_value): print(s)
 
+def _threading_excepthook(args):  # pragma: no cover
+    print(f"In thread {args.thread.name if args.thread else '<unknown>'}:", file=sys.stderr)
+    for s in javaishstacktrace(args.exc_value): print(s, file=sys.stderr)
+
 class CustomHandlers:
     """A context manager that installs and removes this module's custom error and warning handlers.
 
-    This modifies :func:`warnings.showwarning`, :func:`sys.excepthook`, and :func:`sys.unraisablehook`."""
+    This modifies :func:`warnings.showwarning`, :func:`sys.excepthook`, :func:`sys.unraisablehook`, and
+    :func:`threading.excepthook`."""
     def __enter__(self):
         self.showwarning_orig = warnings.showwarning
         warnings.showwarning = _showwarning
         sys.excepthook = _excepthook
         sys.unraisablehook = _unraisablehook
+        self.prev_threading_excepthook = threading.excepthook  # threading.__excepthook__ was not added until 3.10
+        threading.excepthook = _threading_excepthook
         return self
     def __exit__(self, exc_type, exc_val, exc_tb):
         warnings.showwarning = self.showwarning_orig
         sys.excepthook = sys.__excepthook__
         sys.unraisablehook = sys.__unraisablehook__
+        threading.excepthook = self.prev_threading_excepthook
         return False  # raise exception if any
 
 def init_handlers() -> None:
