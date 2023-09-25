@@ -41,7 +41,13 @@ class ResultLevel(enum.IntEnum):
     ERROR = 40
 
 class ScriptLibFlags(enum.IntFlag):
-    """Flags for :class:`ScriptLibResult`."""
+    """Flags for :class:`ScriptLibResult`.
+
+    .. warning::
+
+        Always use the named flags, do not rely on the integer flag values staying constant,
+        as they are automatically generated.
+    """
     #: Whether the file has its execute bit set (never true on Windows)
     EXEC_BIT = enum.auto()
     #: Whether the file has a shebang line
