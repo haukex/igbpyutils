@@ -205,6 +205,8 @@ class TestDevUtils(unittest.TestCase):
         with TemporaryDirectory() as td:
             tdr = Path(td)
             subprocess.run(['git','init','--quiet'], cwd=td, check=True)
+            subprocess.run(['git','config','--local','user.email','git@example.com'], cwd=td, check=True)
+            subprocess.run(['git','config','--local','user.name','CI Test'], cwd=td, check=True)
             subprocess.run(['git','config','--local','core.autocrlf','false'], cwd=td, check=True)
             subprocess.run(['git','config','--local','core.fileMode','false'], cwd=td, check=True)
             pyl = tdr/'library.py'
