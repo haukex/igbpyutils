@@ -379,6 +379,7 @@ class TestFileUtils(unittest.TestCase):
             os.chmod(f_two, 0o600)
             s_lnk = tdr / 'link.txt'
             os.symlink(f_one, s_lnk)
+            sym_mode = stat.filemode(s_lnk.lstat().st_mode)  # apparently different on OSX and Linux
 
             out = StringIO()
             sys.argv = ["simple-perms", str(tdr)]
@@ -412,7 +413,7 @@ class TestFileUtils(unittest.TestCase):
             self.assertEqual( sorted(out.getvalue().splitlines()), [
                 f"-rw------- -> -rw-r--r-- {f_two}",
                 f"-rw-r--r-- ok -rw-r--r-- {f_one}",
-                f"lrwxrwxrwx ok lrwxrwxrwx {s_lnk}",
+                f"{sym_mode} ok {sym_mode} {s_lnk}",
             ] )
 
             self.assertEqual( stat.S_IMODE(f_one.lstat().st_mode), 0o644 )
