@@ -25,12 +25,15 @@ import re
 import sys
 import ast
 import enum
+import argparse
 import subprocess
 from stat import S_IXUSR
 from pathlib import Path
+from itertools import chain
 from typing import NamedTuple
 from collections.abc import Sequence
-from igbpyutils.file import Filename
+from more_itertools import unique_everseen
+from igbpyutils.file import Filename, to_Paths
 
 class ResultLevel(enum.IntEnum):
     """A severity level enum for :class:`ScriptLibResult`.
@@ -159,21 +162,17 @@ def check_script_vs_lib_cli() -> None:
     """Command-line interface for :func:`check_script_vs_lib`.
 
     If the module and script have been installed correctly, you should be able to run ``py-check-script-vs-lib -h`` for help."""
-    import argparse
-    from itertools import chain
-    from more_itertools import unique_everseen
-    from igbpyutils.file import to_Paths
     parser = argparse.ArgumentParser(description='Check Python Scripts vs. Libraries')
     parser.add_argument('-v', '--verbose', help="be verbose", action="store_true")
     parser.add_argument('-n', '--notice', help="show notices and include in issue count", action="store_true")
-    parser.add_argument('-w', '-g', '--win-git', help="on Windows, check the git repo for the exec bit", action="store_true")
-    parser.add_argument('paths', help="the paths to check", nargs='*')
+    parser.add_argument('-g', '--exec-git', help="get the exec bit from git", action="store_true")
+    parser.add_argument('paths', help="the paths to check (directories searched recursively)", nargs='*')
     args = parser.parse_args()
     issues :int = 0
     for path in unique_everseen( chain.from_iterable(
             pth.rglob('*') if pth.is_dir() else (pth,) for pth in ( to_Paths(args.paths) if args.paths else (Path(),) ) ) ):
         if not path.is_file() or not path.suffix.lower()=='.py': continue
-        result = check_script_vs_lib(path, exec_from_git=args.win_git)
+        result = check_script_vs_lib(path, exec_from_git=args.exec_git)
         if result.level>=ResultLevel.WARNING or args.verbose or args.notice and result.level>=ResultLevel.NOTICE:
             print(f"{result.level.name} {result.path}: {result.message}")
         if result.level>=ResultLevel.WARNING or args.notice and result.level>=ResultLevel.NOTICE:

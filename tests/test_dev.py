@@ -200,7 +200,6 @@ class TestDevUtils(unittest.TestCase):
             write_test_file(path, ntf, case1.flags, shebang='#!/usr/bin/python')
             self.assertEqual( check_script_vs_lib(path), case1._replace(path=path) )
 
-    #@unittest.skipIf(condition=not sys.platform.startswith('win32'), reason='only on Windows')
     def test_script_vs_lib_git(self):
         with TemporaryDirectory() as td:
             tdr = Path(td)
@@ -247,27 +246,27 @@ class TestDevUtils(unittest.TestCase):
             with py3.open('wb') as fh: write_test_file(py3, fh, ScriptLibFlags.SHEBANG|ScriptLibFlags.SCRIPT_LIKE|ScriptLibFlags.EXEC_BIT)  # notice
 
             out1 = StringIO()
-            sys.argv = ["check-script-vs-lib", str(tdr)]
+            sys.argv = ["py-check-script-vs-lib", str(tdr)]
             with (redirect_stdout(out1), patch('argparse.ArgumentParser.exit') as mock1):
                 check_script_vs_lib_cli()
-            mock1.assert_called_with(1)
+            mock1.assert_called_once_with(1)
             self.assertEqual( out1.getvalue(), f"ERROR {py2}: File has shebang but seems to be missing anything script-like\n")
 
             out2 = StringIO()
-            sys.argv = ["check-script-vs-lib", "-n", str(tdr)]
+            sys.argv = ["py-check-script-vs-lib", "-n", str(tdr)]
             with (redirect_stdout(out2), patch('argparse.ArgumentParser.exit') as mock2):
                 check_script_vs_lib_cli()
-            mock2.assert_called_with(2)
+            mock2.assert_called_once_with(2)
             self.assertEqual( sorted(out2.getvalue().splitlines()), [
                 f"ERROR {py2}: File has shebang but seems to be missing anything script-like",
                 f"NOTICE {py3}: File looks like a normal script (but could use `if __name__=='__main__'`)",
             ])
 
             out3 = StringIO()
-            sys.argv = ["check-script-vs-lib", "-v", str(tdr)]
+            sys.argv = ["py-check-script-vs-lib", "-v", str(tdr)]
             with (redirect_stdout(out3), patch('argparse.ArgumentParser.exit') as mock3):
                 check_script_vs_lib_cli()
-            mock3.assert_called_with(1)
+            mock3.assert_called_once_with(1)
             self.assertEqual( sorted(out3.getvalue().splitlines()), [
                 f"ERROR {py2}: File has shebang but seems to be missing anything script-like",
                 f"INFO {py1}: File looks like a normal library",
