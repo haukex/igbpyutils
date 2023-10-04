@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "igbpyutils"
 description = "Various Python Utilities"
-version = "0.2.0"
+version = "0.3.0"
 authors = [ { name="Hauke D", email="haukex@zero-g.net" } ]
 readme = "README.rst"
 requires-python = ">=3.9"
@@ -25,6 +25,7 @@ classifiers = [
 
 [project.scripts]
 py-check-script-vs-lib = "igbpyutils.dev:check_script_vs_lib_cli"
+simple-perms = "igbpyutils.file:simple_perms_cli"
 
 [project.urls]
 "Homepage" = "https://github.com/haukex/igbpyutils"

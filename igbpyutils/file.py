@@ -26,13 +26,17 @@ import sys
 import uuid
 import typing
 import io
-from gzip import GzipFile
+import argparse
 from pathlib import Path
-from contextlib import contextmanager
-from functools import singledispatch
-from tempfile import NamedTemporaryFile, TemporaryDirectory
 from typing import Union
+from gzip import GzipFile
+from itertools import chain
+from functools import singledispatch
+from contextlib import contextmanager
 from collections.abc import Generator, Iterable
+from tempfile import NamedTemporaryFile, TemporaryDirectory
+from stat import S_IWUSR, S_IXUSR, S_IMODE, S_ISDIR, S_ISLNK, filemode, S_IFMT
+from more_itertools import unique_everseen
 
 # Possible To-Do for Later: an idea: implement something like https://stackoverflow.com/q/12593576
 
@@ -262,3 +266,49 @@ if sys.hexversion>=0x030C0000:  # cover-req-ge3.12
     from functools import partial
     NamedTempFileDeleteLater = partial(NamedTemporaryFile, delete=True, delete_on_close=False)  # type: ignore
 else: pass  # cover-req-lt3.12
+
+_perm_map :dict[bool, dict[int, int]] = {
+    False: { 0: 0o444, S_IXUSR: 0o555, S_IWUSR: 0o644, S_IWUSR|S_IXUSR: 0o755 },
+    True:  { 0: 0o444, S_IXUSR: 0o555, S_IWUSR: 0o664, S_IWUSR|S_IXUSR: 0o775 },
+}
+def simple_perms(st_mode :int, *, group_write :bool = False) -> tuple[int, int]:
+    """This function tests a file's permission bits to see if they are in a small set of "simple" permissions
+    and suggests new permission bits if they are not.
+
+    The set of "simple" permissions is (0o444, 0o555, 0o644, 0o755) or, when ``group_write`` is :obj:`True`, (0o444, 0o555, 0o664, 0o775).
+
+    :param st_mode: The file's mode bits from :attr:`os.stat_result.st_mode`, such as returned by :func:`os.lstat` or :meth:`pathlib.Path.lstat`.
+    :param group_write: When :obj:`True`, suggest that files / directories writable by the user should be writable by the group too.
+    :return: A tuple consisting of the file's current permission and a suggested permission to use instead,
+        based on the user's permission bits and whether the file is a directory or not.
+        The two values may be equal indicating that no change is suggested.
+        No changes are suggested for symbolic links.
+    """
+    return S_IMODE(st_mode), ( S_IMODE(st_mode) if S_ISLNK(st_mode)
+                               else _perm_map[group_write][ ( st_mode|( S_IXUSR if S_ISDIR(st_mode) else 0 ) ) & (S_IWUSR|S_IXUSR) ] )
+
+def simple_perms_cli() -> None:
+    """Command-line interface for :func:`simple_perms`.
+
+    If the module and script have been installed correctly, you should be able to run ``simple-perms -h`` for help."""
+    parser = argparse.ArgumentParser(description='Check for Simple Permissions')
+    parser.add_argument('-v', '--verbose', help="list all files", action="store_true")
+    parser.add_argument('-g', '--group-write', help="the group should have write permissions", action="store_true")
+    parser.add_argument('-m', '--modify', help="automatically modify files' permissions", action="store_true")
+    parser.add_argument('-u', '--umask', help="apply a mask to the suggested permissions (octal)")
+    parser.add_argument('paths', help="the paths to check (directories searched recursively)", nargs='*')
+    args = parser.parse_args()
+    issues :int = 0
+    umask = S_IMODE(int(args.umask, 8)) if args.umask else 0
+    for path in unique_everseen( chain.from_iterable(
+            pth.rglob('*') if pth.is_dir() else (pth,) for pth in ( to_Paths(args.paths) if args.paths else (Path(),) ) ) ):
+        mode = path.lstat().st_mode
+        perm, sugg = simple_perms(mode, group_write=args.group_write)
+        if not S_ISLNK(mode): sugg &= ~umask
+        if perm != sugg:
+            print(f"{filemode(mode)} -> {filemode(S_IFMT(mode)|S_IMODE(sugg))} {path}")
+            if args.modify: os.chmod(path, sugg)
+            else: issues += 1
+        elif args.verbose:
+            print(f"{filemode(mode)} ok {filemode(mode)} {path}")
+    parser.exit(issues)
