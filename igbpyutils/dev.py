@@ -21,12 +21,14 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see https://www.gnu.org/licenses/
 """
 import os
+import re
 import sys
 import ast
 import enum
-from typing import NamedTuple
-from pathlib import Path
+import subprocess
 from stat import S_IXUSR
+from pathlib import Path
+from typing import NamedTuple
 from collections.abc import Sequence
 from igbpyutils.file import Filename
 
@@ -34,13 +36,12 @@ class ResultLevel(enum.IntEnum):
     """A severity level enum for :class:`ScriptLibResult`.
 
     (Note the numeric values are mostly borrowed from :mod:`logging`.)"""
-    DEBUG = 10
     INFO = 20
     NOTICE = 25
     WARNING = 30
     ERROR = 40
 
-class ScriptLibFlags(enum.IntFlag):
+class ScriptLibFlags(enum.Flag):
     """Flags for :class:`ScriptLibResult`.
 
     .. warning::
@@ -48,7 +49,7 @@ class ScriptLibFlags(enum.IntFlag):
         Always use the named flags, do not rely on the integer flag values staying constant,
         as they are automatically generated.
     """
-    #: Whether the file has its execute bit set (never true on Windows)
+    #: Whether the file has its execute bit set
     EXEC_BIT = enum.auto()
     #: Whether the file has a shebang line
     SHEBANG = enum.auto()
@@ -70,19 +71,25 @@ class ScriptLibResult(NamedTuple):
     flags :ScriptLibFlags
 
 _IS_WINDOWS = sys.platform.startswith('win32')
+_git_ls_tree_re = re.compile(r'''\A([0-7]+) blob [a-fA-F0-9]{40}\t(.+)(?:\Z|\n)''')
 
-def check_script_vs_lib(path :Filename, *, known_shebangs :Sequence[str] = ('#!/usr/bin/env python3',) ) -> ScriptLibResult:
-    """This function analyzes a Python file to see whether it looks like a library or a script, and checks that this is consistent.
+def check_script_vs_lib(path :Filename, *, known_shebangs :Sequence[str] = ('#!/usr/bin/env python3',), exec_from_git :bool = False) -> ScriptLibResult:
+    """This function analyzes a Python file to see whether it looks like a library or a script,
+    and checks several features of the file for consistency.
 
     It checks the following points, each of which on their own would indicate the file is a script, but in certain combinations don't make sense.
     It checks whether the file...
 
-    - has its execute bit set (ignored on Windows)
-    - has a shebang line (``#!/usr/bin/env python3``)
+    - has its execute bit set (ignored on Windows, unless ``exec_from_git`` is set)
+    - has a shebang line (``#!/usr/bin/env python3``, see also the ``known_shebangs`` parameter)
     - contains a ``if __name__=='__main__':`` line
     - contains statements other than ``class``, ``def``, etc. in the main body
 
-    The return value of this function, :class:`ScriptLibResult`, will indicate what was found and whether there are any inconsistencies.
+    :param path: The name of the file to analyze.
+    :param known_shebangs: You may provide your own list of shebang lines that this function will recognize here (each without the trailing newline).
+    :param exec_from_git: If you set this to :obj:`True`, then instead of looking at the file's actual mode bits to determine whether the
+        exec bit is set, the function will ask ``git`` for the mode bits of the file and use those.
+    :return: A :class:`ScriptLibResult` object that indicates what was found and whether there are any inconsistencies.
     """
     pth = Path(path)
     flags = ScriptLibFlags(0)
@@ -90,6 +97,20 @@ def check_script_vs_lib(path :Filename, *, known_shebangs :Sequence[str] = ('#!/
         if not _IS_WINDOWS and os.stat(fh.fileno()).st_mode & S_IXUSR:
             flags |= ScriptLibFlags.EXEC_BIT
         source = fh.read()
+    ignore_exec_bit = _IS_WINDOWS
+    if exec_from_git:
+        flags &= ~ScriptLibFlags.EXEC_BIT
+        res = subprocess.run(['git','ls-tree','HEAD',pth.name], cwd=pth.parent,
+                             encoding='UTF-8', check=True, capture_output=True)
+        assert not res.returncode and not res.stderr
+        if m := _git_ls_tree_re.fullmatch(res.stdout):
+            if m.group(2) != pth.name:
+                raise RuntimeError(f"Unexpected git output, filename mismatch {res.stdout!r}")
+            if int(m.group(1), 8) & S_IXUSR:
+                flags |= ScriptLibFlags.EXEC_BIT
+        else:
+            raise RuntimeError(f"Failed to parse git output {res.stdout!r}")
+        ignore_exec_bit = False
     shebang_line :str = ''
     if source.startswith('#!'):
         shebang_line = source[:source.index('\n')]
@@ -123,13 +144,13 @@ def check_script_vs_lib(path :Filename, *, known_shebangs :Sequence[str] = ('#!/
         return ScriptLibResult(pth, ResultLevel.ERROR, f"File has shebang{' and exec bit' if flags&ScriptLibFlags.EXEC_BIT else ''} but seems to be missing anything script-like", flags)
     else:
         assert (flags&ScriptLibFlags.NAME_MAIN or flags&ScriptLibFlags.SCRIPT_LIKE) and not (flags&ScriptLibFlags.NAME_MAIN and flags&ScriptLibFlags.SCRIPT_LIKE)  # xor
-        if (flags & ScriptLibFlags.EXEC_BIT or _IS_WINDOWS) and flags&ScriptLibFlags.SHEBANG:
+        if (flags & ScriptLibFlags.EXEC_BIT or ignore_exec_bit) and flags&ScriptLibFlags.SHEBANG:
             if flags&ScriptLibFlags.SCRIPT_LIKE:
                 return ScriptLibResult(pth, ResultLevel.NOTICE, f"File looks like a normal script (but could use `if __name__=='__main__'`)", flags)
             else:
                 return ScriptLibResult(pth, ResultLevel.INFO, f"File looks like a normal script", flags)
         else:
-            missing = ([] if flags & ScriptLibFlags.EXEC_BIT or _IS_WINDOWS else ['exec bit']) + ([] if flags & ScriptLibFlags.SHEBANG else ['shebang'])
+            missing = ([] if flags & ScriptLibFlags.EXEC_BIT or ignore_exec_bit else ['exec bit']) + ([] if flags & ScriptLibFlags.SHEBANG else ['shebang'])
             assert missing
             why :str = ', '.join(why_scriptlike) if flags&ScriptLibFlags.SCRIPT_LIKE else "`if __name__=='__main__'`"
             return ScriptLibResult(pth, ResultLevel.ERROR, f"File looks like a script (due to {why}) but is missing {' and '.join(missing)}", flags)
@@ -145,13 +166,14 @@ def check_script_vs_lib_cli() -> None:
     parser = argparse.ArgumentParser(description='Check Python Scripts vs. Libraries')
     parser.add_argument('-v', '--verbose', help="be verbose", action="store_true")
     parser.add_argument('-n', '--notice', help="show notices and include in issue count", action="store_true")
+    parser.add_argument('-w', '-g', '--win-git', help="on Windows, check the git repo for the exec bit", action="store_true")
     parser.add_argument('paths', help="the paths to check", nargs='*')
     args = parser.parse_args()
     issues :int = 0
     for path in unique_everseen( chain.from_iterable(
             pth.rglob('*') if pth.is_dir() else (pth,) for pth in ( to_Paths(args.paths) if args.paths else (Path(),) ) ) ):
         if not path.is_file() or not path.suffix.lower()=='.py': continue
-        result = check_script_vs_lib(path)
+        result = check_script_vs_lib(path, exec_from_git=args.win_git)
         if result.level>=ResultLevel.WARNING or args.verbose or args.notice and result.level>=ResultLevel.NOTICE:
             print(f"{result.level.name} {result.path}: {result.message}")
         if result.level>=ResultLevel.WARNING or args.notice and result.level>=ResultLevel.NOTICE:
