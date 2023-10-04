@@ -23,9 +23,11 @@ Making a Release
 	- TODO: Consider <https://github.com/actions/deploy-pages> instead
 - `git tag vX.X.X`
 - `git push --tags`
+- (The following steps should be done on Linux)
 - `python3 -m build`
-- Optional: inspect the package with `tar tzvf ...`
+- Optional: inspect the package with `tar tzvf dist/igbpyutils-*.tar.gz`
 - `twine upload dist/igbpyutils-*.tar.gz`
 - Add new release on GitHub
 - `git clean -dxf dist *.egg-info`
-- Add placeholder for next version to changelog
+- Optional: Add placeholder for next version to changelog
+- Test installation of package and command-line scripts
