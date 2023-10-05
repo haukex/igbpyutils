@@ -54,7 +54,7 @@ def zip_strict(*iterables):  # cover-req-lt3.10
         if any( v is _marker for v in combo ):
             raise ValueError("Iterables have different lengths")
         yield combo
-if sys.hexversion>=0x030A00F0:  # cover-req-ge3.10
+if sys.hexversion>=0x030A00B0:  # cover-req-ge3.10
     from functools import partial
     zip_strict = partial(zip, strict=True)  # type: ignore
 else: pass  # cover-req-lt3.10
