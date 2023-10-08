@@ -24,6 +24,9 @@ classifiers = [
     "Topic :: Software Development :: Libraries",
 ]
 
+[tool.setuptools]
+packages = ["igbpyutils"]
+
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
 
