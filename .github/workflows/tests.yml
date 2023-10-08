@@ -22,7 +22,7 @@ jobs:
           python -m pip install --upgrade pip wheel coverage mypy
           pip install -r requirements.txt
       - name: Generate coveragerc file
-        run: python utils/gencovrc.py -f${{ matrix.python-version }} 9 13
+        run: python dev/gencovrc.py -f${{ matrix.python-version }} 9 13
       - name: Python Tests with Coverage
         env:
           PYTHONWARNDEFAULTENCODING: 1

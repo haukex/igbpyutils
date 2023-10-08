@@ -14,7 +14,7 @@ Making a Release
 ----------------
 
 - Update `docs/changelog.rst`
-- Update version number everywhere
+- Update version number everywhere (e.g. `grep -r '0\.[0-9]\.[0-9]'`)
 - Try building the docs (`make clean all` in `docs` subdir)
 - `git commit`
 - `git push`
@@ -26,6 +26,7 @@ Making a Release
 - (The following steps should be done on Linux)
 - `python3 -m build`
 - Optional: inspect the package with `tar tzvf dist/igbpyutils-*.tar.gz`
+- Run `utils/isolated_test.sh dist/igbpyutils-*.tar.gz`
 - `twine upload dist/igbpyutils-*.tar.gz`
 - Add new release on GitHub
 - `git clean -dxf dist *.egg-info`

@@ -4,6 +4,9 @@ Changelog for ``igbpyutils``
 Changelog
 ---------
 
+v0.3.1 - Sun Oct  8 2023
+    - Fixed project requirements
+
 v0.3.0 - Wed Oct  4 2023
     - Added ``exec_from_git`` option to :func:`~igbpyutils.dev.check_script_vs_lib`
     - Added :func:`~igbpyutils.file.simple_perms`

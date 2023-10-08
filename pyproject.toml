@@ -5,10 +5,11 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "igbpyutils"
 description = "Various Python Utilities"
-version = "0.3.0"
+version = "0.3.1"
 authors = [ { name="Hauke D", email="haukex@zero-g.net" } ]
 readme = "README.rst"
 requires-python = ">=3.9"
+dynamic = ["dependencies"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",
@@ -22,6 +23,9 @@ classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Topic :: Software Development :: Libraries",
 ]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
 
 [project.scripts]
 py-check-script-vs-lib = "igbpyutils.dev:check_script_vs_lib_cli"
