@@ -116,6 +116,7 @@ class CustomHandlers:
     :func:`threading.excepthook`, and, if there's a running :mod:`asyncio` event loop,
     sets its ``loop.set_exception_handler()`` to :func:`asyncio_exception_handler`. The latter can also
     be done manually later if there is no running loop at the moment."""
+    #TODO: Consider providing a way to customize unittest errors: https://github.com/python/cpython/blob/01481f2d/Lib/unittest/result.py#L187
     def __enter__(self):
         self.showwarning_orig = warnings.showwarning
         warnings.showwarning = _showwarning
