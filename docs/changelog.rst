@@ -4,6 +4,9 @@ Changelog for ``igbpyutils``
 Changelog
 ---------
 
+v0.3.2 - Thu Nov  2 2023
+    - Added ``--add*`` options to ``simple-perms`` tool
+
 v0.3.1 - Sun Oct  8 2023
     - Fixed project requirements
 

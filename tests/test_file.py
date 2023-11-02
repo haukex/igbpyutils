@@ -471,5 +471,22 @@ class TestFileUtils(unittest.TestCase):
             self.assertEqual( stat.S_IMODE(d_thr.lstat().st_mode), 0o775 )
             self.assertEqual( stat.S_IMODE(d_fou.lstat().st_mode), 0o555 )
 
+            out = StringIO()
+            sys.argv = ["simple-perms", '-m', '-u077', '-a004', '-d2050', '-f001', str(tdr)]
+            with (redirect_stdout(out), patch('argparse.ArgumentParser.exit') as mock):
+                simple_perms_cli()
+            mock.assert_called_once_with(0)
+            self.assertEqual( sorted(out.getvalue().splitlines()), [
+                f"-r-xr-xr-x -> -r-x---r-x {f_two}",
+                f"-rw-rw-r-- -> -rw----r-x {f_one}",
+                f"dr-xr-xr-x -> dr-xr-sr-- {d_fou}",
+                f"drwxrwxr-x -> drwxr-sr-- {d_thr}",
+            ] )
+
+            self.assertEqual( stat.S_IMODE(f_one.lstat().st_mode), 0o0605 )
+            self.assertEqual( stat.S_IMODE(f_two.lstat().st_mode), 0o0505 )
+            self.assertEqual( stat.S_IMODE(d_thr.lstat().st_mode), 0o2754 )
+            self.assertEqual( stat.S_IMODE(d_fou.lstat().st_mode), 0o2554 )
+
 if __name__ == '__main__':  # pragma: no cover
     unittest.main()

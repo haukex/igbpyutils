@@ -296,15 +296,24 @@ def simple_perms_cli() -> None:
     parser.add_argument('-g', '--group-write', help="the group should have write permissions", action="store_true")
     parser.add_argument('-m', '--modify', help="automatically modify files' permissions", action="store_true")
     parser.add_argument('-u', '--umask', help="apply a mask to the suggested permissions (octal)")
+    parser.add_argument('-a', '--add', help="add these permission bits to all files/dirs (octal)")
+    parser.add_argument('-d', '--add-dir', help="add these permission bits to dirs (octal)")
+    parser.add_argument('-f', '--add-file', help="add these permission bits to non-dirs (octal)")
     parser.add_argument('paths', help="the paths to check (directories searched recursively)", nargs='*')
     args = parser.parse_args()
     issues :int = 0
     umask = S_IMODE(int(args.umask, 8)) if args.umask else 0
+    add_perm = S_IMODE(int(args.add, 8)) if args.add else 0
+    add_dir_perm = S_IMODE(int(args.add_dir, 8)) if args.add_dir else 0
+    add_file_perm = S_IMODE(int(args.add_file, 8)) if args.add_file else 0
     for path in unique_everseen( chain.from_iterable(
             pth.rglob('*') if pth.is_dir() else (pth,) for pth in ( to_Paths(args.paths) if args.paths else (Path(),) ) ) ):
         mode = path.lstat().st_mode
         perm, sugg = simple_perms(mode, group_write=args.group_write)
-        if not S_ISLNK(mode): sugg &= ~umask
+        if not S_ISLNK(mode):
+            sugg &= ~umask
+            sugg |= add_perm
+            sugg |= add_dir_perm if S_ISDIR(mode) else add_file_perm
         if perm != sugg:
             print(f"{filemode(mode)} -> {filemode(S_IFMT(mode)|S_IMODE(sugg))} {path}")
             if args.modify: os.chmod(path, sugg)
