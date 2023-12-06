@@ -96,6 +96,8 @@ def autoglob(files :Iterable[str], *, force :bool=False) -> Generator[str, None,
     otherwise a single element of ``"/home/username/*.py"``. However, in a Windows ``cmd.exe`` shell,
     the aforementioned command always results in ``args.files`` being ``['~/*.py']``. This function
     fixes that, such that the behavior on Windows is the same as on Linux.
+
+    .. warning:: **Caveat:** In Windows Git Bash, this function also expands globs, which may not be what you want. (TODO: Fix)
     """
     from glob import glob
     from os.path import expanduser
