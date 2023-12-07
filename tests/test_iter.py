@@ -21,8 +21,6 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see https://www.gnu.org/licenses/
 """
 import unittest
-from itertools import product
-from more_itertools import gray_product
 from igbpyutils.iter import no_duplicates, SizedCallbackIterator, is_unique_everseen, zip_strict
 
 class TestIterTools(unittest.TestCase):
@@ -37,123 +35,6 @@ class TestIterTools(unittest.TestCase):
             list( zip_strict( l2, l3, l4 ) )
         with self.assertRaises(ValueError):
             list( zip_strict( l2, l2, l4, l4 ) )
-
-    def test_unzip_zip(self):
-        """Make sure that ``unzip``-then-``zip`` works as expected,
-        that is, it consumes the input table one row at a time.
-
-        It is documented that ``unzip`` uses ``tee`` internally, and this should
-        hopefully confirm that its internal storage doesn't grow too large."""
-        from more_itertools import unzip
-        totest = []
-        def gen():
-            tbl = (
-                ("One", "Abc", "Foo"),
-                ("Two", "Def", "Bar"),
-                ("Thr", "Ghi", "Quz"),
-            )
-            for row in tbl:
-                totest.append(f"gen {row!r}")
-                yield row
-        def trans(seq, start):
-            for i, x in enumerate(seq, start=start):
-                totest.append(f"trans {x}")
-                yield x.lower()+str(i)
-        for orow in zip_strict( *( trans(col, ci*3) for ci, col in enumerate(unzip(gen())) ) ):
-            totest.append(f"got {orow!r}")
-        self.assertEqual([
-            "gen ('One', 'Abc', 'Foo')", 'trans One', 'trans Abc', 'trans Foo', "got ('one0', 'abc3', 'foo6')",
-            "gen ('Two', 'Def', 'Bar')", 'trans Two', 'trans Def', 'trans Bar', "got ('two1', 'def4', 'bar7')",
-            "gen ('Thr', 'Ghi', 'Quz')", 'trans Thr', 'trans Ghi', 'trans Quz', "got ('thr2', 'ghi5', 'quz8')",
-        ], totest)
-        # check that an unequal number of columns throws an error
-        tbl2 = ((0, "x", "y"), (1, "a"))
-        with self.assertRaises(ValueError):
-            tuple( zip_strict( *( tuple(x) for x in unzip(tbl2) ) ) )
-
-    def test_transpose(self):
-        """Test to confirm the difference between ``zip(*iter)`` and ``unzip(iter)``.
-
-        :func:`zip` reads the entire iterable and produces tuples, while :func:`more_itertools.unzip`
-        produces iterators using :func:`itertools.tee` - but note that since this also buffers items,
-        it can also use significant memory."""
-        from more_itertools import unzip
-        totest = []
-        def gen():
-            tbl = (
-                ("One", "Abc", "Foo"),
-                ("Two", "Def", "Bar"),
-                ("Thr", "Ghi", "Quz"),
-            )
-            for row in tbl:
-                totest.append(f"gen {row!r}")
-                yield row
-        for t in zip_strict(*gen()):
-            self.assertIsInstance(t, tuple)
-            totest.append(f"got {t!r}")
-        expect = [
-            "gen ('One', 'Abc', 'Foo')", "gen ('Two', 'Def', 'Bar')", "gen ('Thr', 'Ghi', 'Quz')",
-            "got ('One', 'Two', 'Thr')", "got ('Abc', 'Def', 'Ghi')", "got ('Foo', 'Bar', 'Quz')",
-        ]
-        self.assertEqual(totest, expect)
-        totest = []
-        for t in unzip(gen()):
-            self.assertIsInstance(t, map)
-            totest.append(f"got {tuple(t)!r}")
-        self.assertEqual(totest, expect)
-
-    def test_tee_zip(self):
-        """Make sure that the ``tee``-then-``zip`` pattern works as expected,
-        that is, that it really does consume the input one-at-a-time.
-        **However**, see the "better variant" in the code below!!"""
-        from itertools import tee
-        totest = []
-        def gen():
-            for x in range(1,4):
-                totest.append(f"gen {x}")
-                yield x
-        def trans(seq):
-            for x in seq:
-                out = chr( x + ord('A') - 1 )
-                totest.append(f"trans {x}-{out}")
-                yield out
-        g1, g2 = tee(gen())
-        for i, o in zip_strict(g1, trans(g2)):
-            totest.append(f"got {i}-{o}")
-        self.assertEqual( totest, [
-            'gen 1', 'trans 1-A', 'got 1-A',
-            'gen 2', 'trans 2-B', 'got 2-B',
-            'gen 3', 'trans 3-C', 'got 3-C'] )
-        totest.clear()
-        # The better variant by Stefan Pochmann at https://stackoverflow.com/a/76271631
-        # (the only minor downside being that PyChram detects "i" as "referenced before assignment")
-        for o in trans( i := x for x in gen() ):
-            # noinspection PyUnboundLocalVariable
-            totest.append(f"got {i}-{o}")
-        self.assertEqual( totest, [
-            'gen 1', 'trans 1-A', 'got 1-A',
-            'gen 2', 'trans 2-B', 'got 2-B',
-            'gen 3', 'trans 3-C', 'got 3-C'] )
-
-    def test_gray_product(self):
-        # gray_product has been merged into more_itertools, but we'll keep this test here for now anyway
-        self.assertEqual( tuple( gray_product( ('a','b','c'), range(1,3) ) ),
-            ( ("a",1), ("b",1), ("c",1), ("c",2), ("b",2), ("a",2) ) )
-
-        out = gray_product(('foo', 'bar'), (3, 4, 5, 6), ['quz', 'baz'])
-        self.assertEqual(next(out), ('foo', 3, 'quz'))
-        self.assertEqual(list(out), [
-            ('bar', 3, 'quz'), ('bar', 4, 'quz'), ('foo', 4, 'quz'), ('foo', 5, 'quz'), ('bar', 5, 'quz'),
-            ('bar', 6, 'quz'), ('foo', 6, 'quz'), ('foo', 6, 'baz'), ('bar', 6, 'baz'), ('bar', 5, 'baz'),
-            ('foo', 5, 'baz'), ('foo', 4, 'baz'), ('bar', 4, 'baz'), ('bar', 3, 'baz'), ('foo', 3, 'baz')])
-
-        self.assertEqual( tuple( gray_product() ), ((), ) )
-        self.assertEqual( tuple( gray_product( (1,2) ) ), ( (1,), (2,) ) )
-        with self.assertRaises(ValueError): list( gray_product( (1,2), () ) )
-        with self.assertRaises(ValueError): list( gray_product( (1,2), (2,) ) )
-
-        iters = ( ("a","b"), range(3,6), [None, None], {"i","j","k","l"}, "XYZ" )
-        self.assertEqual( sorted( product(*iters) ), sorted( gray_product(*iters) ) )
 
     def test_sized_cb_iterator(self):
         def gen(x):
