@@ -33,6 +33,7 @@ dependencies = {file = ["requirements.txt"]}
 [project.scripts]
 py-check-script-vs-lib = "igbpyutils.dev:check_script_vs_lib_cli"
 simple-perms = "igbpyutils.file:simple_perms_cli"
+gen-coveragerc = "igbpyutils.dev:generate_coveragerc_cli"
 
 [project.urls]
 "Homepage" = "https://github.com/haukex/igbpyutils"

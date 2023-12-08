@@ -30,7 +30,7 @@ import subprocess
 from stat import S_IXUSR
 from pathlib import Path
 from itertools import chain
-from typing import NamedTuple
+from typing import NamedTuple, Optional
 from collections.abc import Sequence
 from more_itertools import unique_everseen
 from igbpyutils.file import Filename, to_Paths
@@ -178,3 +178,53 @@ def check_script_vs_lib_cli() -> None:
         if result.level>=ResultLevel.WARNING or args.notice and result.level>=ResultLevel.NOTICE:
             issues += 1
     parser.exit(issues)
+
+def generate_coveragerc(*, minver :int, maxver :int, forver :Optional[int]=None, outdir :Optional[Path]=None, verbose :bool=False):
+    """Generate ``.coveragerc3.X`` files for various Python 3 versions.
+
+    These generated files provide tags such as ``cover-req-ge3.10`` and ``cover-req-lt3.10`` that can be used
+    to exclude source code lines on ranges of Python versions. This tool is used within this project itself.
+
+    :param minver: The minimum Python minor version which to include in the generated tags, inclusive.
+    :param maxver: The maximum Python minor version which to include in the generated tags, exclusive.
+    :param forver: If specified, only a single ``.coverage3.X`` file for that minor version is generated,
+        otherwise files are generated for all versions in the aforementioned range.
+    :param outdir: The path into which to output the files. Defaults to the current working directory.
+    :param verbose: If true, ``print`` a message for each file written.
+    """
+    versions = range(minver, maxver)
+    if not versions:
+        raise ValueError(f"No versions in range")
+    if forver is not None and forver not in versions:
+        raise ValueError(f"forver must be in the range minver to maxver")
+    if not outdir: outdir = Path()
+    for vc in versions if forver is None else (forver,):
+        fn = outdir / f".coveragerc3.{vc}"
+        with fn.open('w', encoding='ASCII', newline='\n') as fh:
+            print(f"# Generated .coveragerc for Python 3.{vc}\n[report]\nexclude_lines =\n    pragma: no cover", file=fh)
+            for v in versions[1:]:
+                print(f"    cover-req-" + re.escape(f"{'ge' if v>vc else 'lt'}3.{v}"), file=fh)
+        if verbose: print(f"Wrote {fn}")
+
+def _parsever(ver :str):
+    if re.fullmatch(r'''\A[0-9]+\Z''', ver):
+        return int(ver)
+    elif m := re.fullmatch(r'''\A3\.([0-9]+)\Z''', ver):
+        return int(m.group(1))
+    else:
+        raise ValueError(f"Failed to understand version number {ver!r}, must be \"3.X\" or minor version only")
+
+def generate_coveragerc_cli():
+    """Command-line interface for :func:`generate_coveragerc`.
+
+    If the module and script have been installed correctly, you should be able to run ``gen-coveragerc -h`` for help."""
+    parser = argparse.ArgumentParser(description='Generate .coveragerc3.X files')
+    parser.add_argument('-q','--quiet', help="Don't output informational messages",action="store_true")
+    parser.add_argument('-o','--outdir', help="Output directory")
+    parser.add_argument('-f','--forver', metavar='VERSION', help="only generate for this version")
+    parser.add_argument('minver', help="3.N minimum version (inclusive)")
+    parser.add_argument('maxver', help="3.M maximum version (exclusive)")
+    args = parser.parse_args()
+    generate_coveragerc(minver=_parsever(args.minver), maxver=_parsever(args.maxver), verbose=not args.quiet,
+        forver=_parsever(args.forver) if args.forver else None, outdir=Path(args.outdir) if args.outdir else None)
+    parser.exit(0)

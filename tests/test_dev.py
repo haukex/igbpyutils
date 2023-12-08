@@ -24,13 +24,16 @@ import unittest
 import os
 import sys
 import subprocess
+from textwrap import dedent
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest.mock import patch
 from types import SimpleNamespace
 from io import TextIOWrapper, StringIO
 from contextlib import redirect_stdout
-from igbpyutils.file import NamedTempFileDeleteLater, TemporaryDirectory
-from igbpyutils.dev import ScriptLibFlags, ScriptLibResult, ResultLevel, check_script_vs_lib, check_script_vs_lib_cli
+from igbpyutils.file import NamedTempFileDeleteLater, Pushd
+from igbpyutils.dev import ScriptLibFlags, ScriptLibResult, ResultLevel, check_script_vs_lib, check_script_vs_lib_cli, \
+    generate_coveragerc, generate_coveragerc_cli
 
 def write_test_file(name, bfh, flags :ScriptLibFlags, *, shebang :str = "#!/usr/bin/env python3"):
     with TextIOWrapper(bfh, encoding='UTF-8') as fh:
@@ -272,6 +275,89 @@ class TestDevUtils(unittest.TestCase):
                 f"INFO {py1}: File looks like a normal library",
                 f"NOTICE {py3}: File looks like a normal script (but could use `if __name__=='__main__'`)",
             ])
+
+    def test_gencovrc(self):
+        with TemporaryDirectory() as tempd:
+            td = Path(tempd)
+            with Pushd(td):
+                out = StringIO()
+                sys.argv = ["gen-coveragerc", "-q", "9", "3.13"]
+                with (redirect_stdout(out), patch('argparse.ArgumentParser.exit') as mock):
+                    generate_coveragerc_cli()
+                mock.assert_called_once_with(0)
+                self.assertEqual( out.getvalue(), "" )
+            self.assertEqual(['.coveragerc3.10', '.coveragerc3.11', '.coveragerc3.12', '.coveragerc3.9'],
+                sorted( x.name for x in td.iterdir() ) )
+            with open(td/'.coveragerc3.9', 'r', encoding='ASCII') as fh:
+                self.assertEqual(fh.read(), dedent("""\
+                    # Generated .coveragerc for Python 3.9
+                    [report]
+                    exclude_lines =
+                        pragma: no cover
+                        cover-req-ge3\\.10
+                        cover-req-ge3\\.11
+                        cover-req-ge3\\.12
+                    """))
+            with open(td/'.coveragerc3.10', 'r', encoding='ASCII') as fh:
+                self.assertEqual(fh.read(), dedent("""\
+                    # Generated .coveragerc for Python 3.10
+                    [report]
+                    exclude_lines =
+                        pragma: no cover
+                        cover-req-lt3\\.10
+                        cover-req-ge3\\.11
+                        cover-req-ge3\\.12
+                    """))
+            with open(td/'.coveragerc3.11', 'r', encoding='ASCII') as fh:
+                self.assertEqual(fh.read(), dedent("""\
+                    # Generated .coveragerc for Python 3.11
+                    [report]
+                    exclude_lines =
+                        pragma: no cover
+                        cover-req-lt3\\.10
+                        cover-req-lt3\\.11
+                        cover-req-ge3\\.12
+                    """))
+            with open(td/'.coveragerc3.12', 'r', encoding='ASCII') as fh:
+                self.assertEqual(fh.read(), dedent("""\
+                    # Generated .coveragerc for Python 3.12
+                    [report]
+                    exclude_lines =
+                        pragma: no cover
+                        cover-req-lt3\\.10
+                        cover-req-lt3\\.11
+                        cover-req-lt3\\.12
+                    """))
+
+            od = td / 'foo'
+            od.mkdir()
+            out = StringIO()
+            sys.argv = ["gen-coveragerc", "--outdir", str(od), "-f11", "9", "3.13"]
+            with (redirect_stdout(out), patch('argparse.ArgumentParser.exit') as mock):
+                generate_coveragerc_cli()
+            mock.assert_called_once_with(0)
+            self.assertEqual( out.getvalue(), f"Wrote {od/'.coveragerc3.11'}\n" )
+            self.assertEqual(['.coveragerc3.11'], list( x.name for x in od.iterdir() ) )
+            with open(od/'.coveragerc3.11', 'r', encoding='ASCII') as fh:
+                self.assertEqual(fh.read(), dedent("""\
+                    # Generated .coveragerc for Python 3.11
+                    [report]
+                    exclude_lines =
+                        pragma: no cover
+                        cover-req-lt3\\.10
+                        cover-req-lt3\\.11
+                        cover-req-ge3\\.12
+                    """))
+        # error cases
+        with self.assertRaises(ValueError):
+            generate_coveragerc(minver=9, maxver=9)
+        with self.assertRaises(ValueError):
+            generate_coveragerc(minver=9, maxver=8)
+        with self.assertRaises(ValueError):
+            generate_coveragerc(minver=9, maxver=10, forver=10)
+        from igbpyutils.dev import _parsever
+        with self.assertRaises(ValueError):
+            _parsever("4.11")
 
 if __name__ == '__main__':  # pragma: no cover
     unittest.main()
