@@ -26,6 +26,8 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see https://www.gnu.org/licenses/
 """
 import unittest
+from typing import Any
+from collections.abc import Generator, Iterable
 from igbpyutils.iter import zip_strict
 
 class TestIterPatterns(unittest.TestCase):
@@ -38,7 +40,7 @@ class TestIterPatterns(unittest.TestCase):
         hopefully confirm that its internal storage doesn't grow too large."""
         from more_itertools import unzip
         totest = []
-        def gen():
+        def gen() -> Generator[tuple[str, str, str], None, None]:
             tbl = (
                 ("One", "Abc", "Foo"),
                 ("Two", "Def", "Bar"),
@@ -47,7 +49,7 @@ class TestIterPatterns(unittest.TestCase):
             for row in tbl:
                 totest.append(f"gen {row!r}")
                 yield row
-        def trans(seq, start):
+        def trans(seq :Iterable[Any], start :int) -> Generator[str, None, None]:
             for i, x in enumerate(seq, start=start):
                 totest.append(f"trans {x}")
                 yield x.lower()+str(i)
@@ -71,7 +73,7 @@ class TestIterPatterns(unittest.TestCase):
         it can also use significant memory."""
         from more_itertools import unzip
         totest = []
-        def gen():
+        def gen() -> Generator[tuple[str, str, str], None, None]:
             tbl = (
                 ("One", "Abc", "Foo"),
                 ("Two", "Def", "Bar"),
@@ -100,32 +102,34 @@ class TestIterPatterns(unittest.TestCase):
         **However**, see the "better variant" in the code below!!"""
         from itertools import tee
         totest = []
-        def gen():
+        def gen() -> Generator[int, None, None]:
             for x in range(1,4):
                 totest.append(f"gen {x}")
                 yield x
-        def trans(seq):
+        def trans(seq :Iterable[int]) -> Generator[str, None, None]:
             for x in seq:
                 out = chr( x + ord('A') - 1 )
                 totest.append(f"trans {x}-{out}")
                 yield out
         g1, g2 = tee(gen())
-        for i, o in zip_strict(g1, trans(g2)):
+        # Note the +3 (and +4 below) is to see if passing a modified sequence through works as well,
+        # `trans(g2)` should work fine too; parallel to `trans( i := x for x in gen() )` below.
+        for i, o in zip_strict(g1, trans( y+3 for y in g2 )):
             totest.append(f"got {i}-{o}")
         self.assertEqual( totest, [
-            'gen 1', 'trans 1-A', 'got 1-A',
-            'gen 2', 'trans 2-B', 'got 2-B',
-            'gen 3', 'trans 3-C', 'got 3-C'] )
+            'gen 1', 'trans 4-D', 'got 1-D',
+            'gen 2', 'trans 5-E', 'got 2-E',
+            'gen 3', 'trans 6-F', 'got 3-F'] )
         totest.clear()
         # The better variant by Stefan Pochmann at https://stackoverflow.com/a/76271631
         # (the only minor downside being that PyChram detects "i" as "referenced before assignment")
-        for o in trans( i := x for x in gen() ):
+        for o in trans( (i := x)+4 for x in gen() ):
             # noinspection PyUnboundLocalVariable
             totest.append(f"got {i}-{o}")
         self.assertEqual( totest, [
-            'gen 1', 'trans 1-A', 'got 1-A',
-            'gen 2', 'trans 2-B', 'got 2-B',
-            'gen 3', 'trans 3-C', 'got 3-C'] )
+            'gen 1', 'trans 5-E', 'got 1-E',
+            'gen 2', 'trans 6-F', 'got 2-F',
+            'gen 3', 'trans 7-G', 'got 3-G'] )
 
     def test_gray_product(self):
         # gray_product has been merged into more_itertools, but we'll keep this test here for now anyway
