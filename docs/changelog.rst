@@ -4,6 +4,10 @@ Changelog for ``igbpyutils``
 Changelog
 ---------
 
+v0.4.0 - Fri Dec  8 2023
+    - Changed :func:`~igbpyutils.file.autoglob` to detect current shell
+      via environment variables instead of ``sys.platform``
+
 v0.3.2 - Thu Nov  2 2023
     - Added ``--add*`` options to ``simple-perms`` tool
 

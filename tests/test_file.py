@@ -57,8 +57,32 @@ class TestFileUtils(unittest.TestCase):
         files = sorted( str(p) for p in testpath.iterdir() if p.name.startswith('test_') and p.name.endswith('.py') )
         self.assertTrue(len(files)>3)
         # this doesn't really test expanduser but that's ok
-        self.assertEqual( files+[noglob], sorted(autoglob([testglob, noglob], force=True)) )
-        self.assertEqual( files if sys.platform.startswith('win32') else [testglob], list(autoglob([testglob])) )
+        orig_shell = os.environ.get('SHELL', None)
+        orig_comsp = os.environ.get('COMSPEC', None)
+        try:
+            # Windows cmd.exe:
+            os.environ.pop('SHELL', None)
+            os.environ['COMSPEC'] = r'C:\WINDOWS\system32\cmd.exe'
+            self.assertEqual( files, sorted(autoglob([testglob])) )
+            self.assertEqual( files+[noglob], sorted(autoglob([testglob, noglob], force=True)) )
+
+            # Windows Git Bash:
+            os.environ['SHELL'] = r'C:\Users\nobody\AppData\Local\Programs\Git\usr\bin\bash.exe'
+            os.environ['COMSPEC'] = r'C:\WINDOWS\system32\cmd.exe'
+            self.assertEqual( [testglob], list(autoglob([testglob])) )
+            self.assertEqual( files+[noglob], sorted(autoglob([testglob, noglob], force=True)) )
+
+            # Linux:
+            os.environ['SHELL'] = r'/bin/bash'
+            os.environ.pop('COMSPEC', None)
+            self.assertEqual( [testglob], list(autoglob([testglob])) )
+            self.assertEqual( files+[noglob], sorted(autoglob([testglob, noglob], force=True)) )
+
+        finally:  # pragma: no cover
+            if orig_shell is None: os.environ.pop('SHELL', None)
+            else: os.environ['SHELL'] = orig_shell
+            if orig_comsp is None: os.environ.pop('COMSPEC', None)
+            else: os.environ['COMSPEC'] = orig_comsp
 
     def test_pushd(self):
         def realpath(pth):

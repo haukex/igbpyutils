@@ -21,6 +21,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see https://www.gnu.org/licenses/
 """
 import os
+import re
 import stat
 import sys
 import uuid
@@ -79,8 +80,11 @@ def _(paths :str) -> Generator[Path, None, None]:
 def _(paths :os.PathLike) -> Generator[Path, None, None]:
     yield _topath(paths)
 
+_nixshell_re = re.compile(r'''(?:\A|\\|/)[a-z]{0,5}sh(?i:\.exe)?\Z''')  # bash, zsh, ksh, tcsh, and many more
+_winshell_re = re.compile(r'''\b(?:COMMAND\.COM|cmd\.exe)\b''', re.I)
+
 def autoglob(files :Iterable[str], *, force :bool=False) -> Generator[str, None, None]:
-    """In Windows, automatically apply :func:`~glob.glob` and :func:`~os.path.expanduser`, otherwise don't change the input.
+    """In Windows ``cmd.exe``, automatically apply :func:`~glob.glob` and :func:`~os.path.expanduser`, otherwise don't change the input.
 
     For example, take the following script:
 
@@ -97,11 +101,15 @@ def autoglob(files :Iterable[str], *, force :bool=False) -> Generator[str, None,
     the aforementioned command always results in ``args.files`` being ``['~/*.py']``. This function
     fixes that, such that the behavior on Windows is the same as on Linux.
 
-    .. warning:: **Caveat:** In Windows Git Bash, this function also expands globs, which may not be what you want. (TODO: Fix)
+    .. note:: This function now uses a heuristic check of the environment variables ``COMSPEC`` and ``SHELL``
+        to detect the current shell. Uncommon values in these variables may cause misdetection; please feel
+        free to submit patches if the detection does not work on your system.
     """
     from glob import glob
     from os.path import expanduser
-    if sys.platform.startswith('win32') or force:
+    likely_nixshell = bool(_nixshell_re.search(os.environ.get('SHELL', '')))
+    likely_winshell = bool(_winshell_re.search(os.environ.get('COMSPEC', '')))
+    if likely_winshell and not likely_nixshell or force:
         for f in files:
             f = expanduser(f)
             g = glob(f)  # note glob always returns a list
