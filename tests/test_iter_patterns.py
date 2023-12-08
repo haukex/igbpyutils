@@ -3,7 +3,8 @@
 
 This test does not actually test any functions in this package,
 it is simply here to confirm that certain patterns work the way
-I expect across various versions of Python.
+I expect across various versions of Python and OSes (and also
+to see if any regressions might happen in the future).
 
 Author, Copyright, and License
 ------------------------------

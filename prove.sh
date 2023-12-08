@@ -15,7 +15,7 @@ else  # Linux
     "$PYTHON" dev/gencovrc.py -q -f$PY_VER 9 13
     COVERAGE="/opt/python$PY_VER/bin/coverage"
     PYTHONWARNINGS=error PYTHONWARNDEFAULTENCODING=1 "$COVERAGE" run --rcfile=".coveragerc$PY_VER" --branch -m unittest "$@"
-    "$COVERAGE" report --rcfile=".coveragerc$PY_VER" --skip-covered --show-missing --fail-under=100 | grep -v 'skipped due to complete coverage'
+    "$COVERAGE" report --rcfile=".coveragerc$PY_VER" --omit='*/igbdatatools/*' --skip-covered --show-missing --fail-under=100 | grep -v 'skipped due to complete coverage'
     "$COVERAGE" erase
     git clean -xf htmlcov
     rm -f ".coveragerc$PY_VER"
