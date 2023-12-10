@@ -106,15 +106,15 @@ class TestDirIteration(unittest.TestCase):
         self.assertEqual(self.expect,
             sorted( (str(p), t) for p,t in path_rglobber(self.td) ) )
 
-    def test_unzipwalk(self):
+    def test_unzipwalk(self):  # pragma: no cover
         """Comparing to our ``unzipwalk`` module (if available) - but this also steps into archives!"""
         # noinspection PyBroadException
         try:
             # I expect unzipwalk to be able to load on Python 3.10+ (if installed)
             unzipwalk = importlib.import_module('unzipwalk')
-        except Exception:  # cover-req-lt3.10
+        except Exception:
             self.skipTest("unzipwalk could not be loaded")
-        else:  # cover-req-ge3.10
+        else:
             # remap from our FileType to unzipwalk.FileType (by enum name)
             expect = [ (pth, unzipwalk.FileType[typ.name]) for pth,typ in self.expect ]
             self.assertEqual(expect,
