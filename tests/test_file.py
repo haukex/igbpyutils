@@ -88,9 +88,9 @@ class TestFileUtils(unittest.TestCase):
         iswin = sys.platform.startswith('win32')
         with (TemporaryDirectory() as tempdir, NamedTempFileDeleteLater(suffix='.txt') as tempf):
             tempf.close()
-            td = Path(tempdir)
+            td = Path(tempdir).resolve(strict=True)
             # we want the tempf to be outside the tempdir
-            self.assertFalse( Path(tempf.name).resolve(strict=True).is_relative_to(td.resolve(strict=True)) )
+            self.assertFalse( Path(tempf.name).resolve(strict=True).is_relative_to(td) )
             (td/'foo').mkdir()
             (td/'one.txt').touch()
             (td/'.two.txt').touch()
