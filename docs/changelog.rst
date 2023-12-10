@@ -4,6 +4,9 @@ Changelog for ``igbpyutils``
 Changelog
 ---------
 
+v0.4.1 - Sun Dec 10 2023
+    - Fix :func:`~igbpyutils.file.cmdline_rglob` on empty generator
+
 v0.4.0 - Sun Dec 10 2023
     - Changed :func:`~igbpyutils.file.autoglob` to detect current shell
       via environment variables instead of ``sys.platform``

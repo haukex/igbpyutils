@@ -115,6 +115,8 @@ class TestFileUtils(unittest.TestCase):
                 self.assertEqual( sorted([ Path('foo'), Path('one.txt'), Path('.two.txt'), Path('foo','three.txt') ]
                     + ([] if iswin else [ Path('bar'), Path('outside'), Path('foo','.link.txt'), Path('foo','broken.txt') ])),
                     sorted( cmdline_rglob([]) ))
+                # empty generator (like autoglob) should be same as empty list
+                self.assertEqual( sorted( cmdline_rglob([]) ), sorted( cmdline_rglob( x for x in [] ) ) )
                 # Use a simpler test for the duplicate detection, because we can't be sure of the directory structure on the test runner
                 self.assertEqual( [td/'one.txt'], list(cmdline_rglob([td/'one.txt', 'one.txt'])) )
                 #self.assertEqual( sorted([ Path('foo'), Path('foo','three.txt'), td, td/'one.txt', td/'.two.txt' ]
