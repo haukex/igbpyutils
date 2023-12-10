@@ -31,7 +31,7 @@ from unittest.mock import patch
 from contextlib import redirect_stdout
 from tempfile import TemporaryDirectory, NamedTemporaryFile
 from igbpyutils.file import (to_Paths, autoglob, Pushd, filetypestr, is_windows_filename_bad, replacer, replace_symlink, replace_link,
-                             NamedTempFileDeleteLater, simple_perms, simple_perms_cli)
+                             NamedTempFileDeleteLater, simple_perms, simple_perms_cli, cmdline_rglob)
 
 class TestFileUtils(unittest.TestCase):
 
@@ -83,6 +83,41 @@ class TestFileUtils(unittest.TestCase):
             else: os.environ['SHELL'] = orig_shell
             if orig_comsp is None: os.environ.pop('COMSPEC', None)
             else: os.environ['COMSPEC'] = orig_comsp
+
+    def test_cmdline_rglob(self):
+        iswin = sys.platform.startswith('win32')
+        with (TemporaryDirectory() as tempdir, NamedTempFileDeleteLater(suffix='.txt') as tempf):
+            tempf.close()
+            td = Path(tempdir)
+            # we want the tempf to be outside the tempdir
+            self.assertFalse( Path(tempf.name).resolve(strict=True).is_relative_to(td.resolve(strict=True)) )
+            (td/'foo').mkdir()
+            (td/'one.txt').touch()
+            (td/'.two.txt').touch()
+            (td/'foo'/'three.txt').touch()
+            # NOTE I'm not sure why the following doesn't report coverage on Python 3.9
+            if not iswin:  # cover-req-ge3.10
+                (td/'bar').symlink_to('foo')
+                (td/'outside').symlink_to(tempf.name)
+                (td/'foo'/'.link.txt').symlink_to('../.two.txt')
+                (td/'foo'/'broken.txt').symlink_to('../does_not_exist')
+            else: pass  # pragma: no cover
+            with Pushd(td):
+                self.assertEqual( sorted([ td, td/'foo', td/'one.txt', td/'.two.txt', td/'foo'/'three.txt' ]
+                    + ([] if iswin else [ td/'bar', td/'outside', td/'foo'/'.link.txt', td/'foo'/'broken.txt' ])),
+                    sorted( cmdline_rglob(td) ) )
+                self.assertEqual( sorted([ td/'foo', td/'one.txt', td/'foo'/'three.txt' ]
+                    + ([] if iswin else [ td/'foo'/'.link.txt', td/'foo'/'broken.txt' ])),
+                    sorted( cmdline_rglob([td/'foo', td/'one.txt']) ))
+                self.assertEqual( sorted([ td/'foo'/'three.txt' ]
+                    + ([] if iswin else [ td/'foo'/'broken.txt' ])),
+                    sorted( cmdline_rglob(autoglob([str(td/'foo'/'*')], force=True)) ))
+                self.assertEqual( sorted([ Path('foo'), Path('one.txt'), Path('.two.txt'), Path('foo','three.txt') ]
+                    + ([] if iswin else [ Path('bar'), Path('outside'), Path('foo','.link.txt'), Path('foo','broken.txt') ])),
+                    sorted( cmdline_rglob([]) ))
+                self.assertEqual( sorted([ Path('foo'), Path('foo','three.txt'), td, td/'one.txt', td/'.two.txt' ]
+                    + ([] if iswin else [ Path('foo','.link.txt'), Path('foo','broken.txt'), td/'bar', td/'outside' ])),
+                    sorted( cmdline_rglob(['foo', td]) ))
 
     def test_pushd(self):
         def realpath(pth):
@@ -394,6 +429,7 @@ class TestFileUtils(unittest.TestCase):
     def test_simple_perms_cli(self):
         with TemporaryDirectory() as td:
             tdr = Path(td)
+            os.chmod(tdr, 0o755)
             f_one = tdr / 'one.txt'
             f_one.touch()
             os.chmod(f_one, 0o644)
@@ -409,23 +445,29 @@ class TestFileUtils(unittest.TestCase):
             with (redirect_stdout(out), patch('argparse.ArgumentParser.exit') as mock):
                 simple_perms_cli()
             mock.assert_called_once_with(1)
-            self.assertEqual(out.getvalue(), f"-rw------- -> -rw-r--r-- {f_two}\n")
+            self.assertEqual( sorted(out.getvalue().splitlines()), [
+                f"-rw------- -> -rw-r--r-- {f_two}",
+            ] )
 
             out = StringIO()
             sys.argv = ["simple-perms", '-u', '077', str(tdr)]
             with (redirect_stdout(out), patch('argparse.ArgumentParser.exit') as mock):
                 simple_perms_cli()
-            mock.assert_called_once_with(1)
-            self.assertEqual(out.getvalue(), f"-rw-r--r-- -> -rw------- {f_one}\n")
+            mock.assert_called_once_with(2)
+            self.assertEqual( sorted(out.getvalue().splitlines()), [
+                f"-rw-r--r-- -> -rw------- {f_one}",
+                f"drwxr-xr-x -> drwx------ {tdr}",
+            ] )
 
             out = StringIO()
             sys.argv = ["simple-perms", '-u', '027', str(tdr)]
             with (redirect_stdout(out), patch('argparse.ArgumentParser.exit') as mock):
                 simple_perms_cli()
-            mock.assert_called_once_with(2)
+            mock.assert_called_once_with(3)
             self.assertEqual( sorted(out.getvalue().splitlines()), [
                 f"-rw------- -> -rw-r----- {f_two}",
                 f"-rw-r--r-- -> -rw-r----- {f_one}",
+                f"drwxr-xr-x -> drwxr-x--- {tdr}",
             ] )
 
             out = StringIO()
@@ -436,6 +478,7 @@ class TestFileUtils(unittest.TestCase):
             self.assertEqual( sorted(out.getvalue().splitlines()), [
                 f"-rw------- -> -rw-r--r-- {f_two}",
                 f"-rw-r--r-- ok -rw-r--r-- {f_one}",
+                f"drwxr-xr-x ok drwxr-xr-x {tdr}",
                 f"{sym_mode} ok {sym_mode} {s_lnk}",
             ] )
 
@@ -447,7 +490,9 @@ class TestFileUtils(unittest.TestCase):
             with (redirect_stdout(out), patch('argparse.ArgumentParser.exit') as mock):
                 simple_perms_cli()
             mock.assert_called_once_with(0)
-            self.assertEqual(out.getvalue(), f"-rw------- -> -rw-r--r-- {f_two}\n")
+            self.assertEqual( sorted(out.getvalue().splitlines()), [
+                f"-rw------- -> -rw-r--r-- {f_two}",
+            ] )
 
             self.assertEqual( stat.S_IMODE(f_one.lstat().st_mode), 0o644 )
             self.assertEqual( stat.S_IMODE(f_two.lstat().st_mode), 0o644 )
@@ -473,6 +518,7 @@ class TestFileUtils(unittest.TestCase):
                 f"drw------- -> drwxr-xr-x {d_thr}",
             ] )
 
+            self.assertEqual( stat.S_IMODE(  tdr.lstat().st_mode), 0o755 )
             self.assertEqual( stat.S_IMODE(f_one.lstat().st_mode), 0o444 )
             self.assertEqual( stat.S_IMODE(f_two.lstat().st_mode), 0o555 )
             self.assertEqual( stat.S_IMODE(d_thr.lstat().st_mode), 0o755 )
@@ -487,9 +533,11 @@ class TestFileUtils(unittest.TestCase):
             mock.assert_called_once_with(0)
             self.assertEqual( sorted(out.getvalue().splitlines()), [
                 f"-rw-r----x -> -rw-rw-r-- {f_one}",
+                f"drwxr-xr-x -> drwxrwxr-x {tdr}",
                 f"drwxr-xr-x -> drwxrwxr-x {d_thr}",
             ] )
 
+            self.assertEqual( stat.S_IMODE(  tdr.lstat().st_mode), 0o775 )
             self.assertEqual( stat.S_IMODE(f_one.lstat().st_mode), 0o664 )
             self.assertEqual( stat.S_IMODE(f_two.lstat().st_mode), 0o555 )
             self.assertEqual( stat.S_IMODE(d_thr.lstat().st_mode), 0o775 )
@@ -504,9 +552,11 @@ class TestFileUtils(unittest.TestCase):
                 f"-r-xr-xr-x -> -r-x---r-x {f_two}",
                 f"-rw-rw-r-- -> -rw----r-x {f_one}",
                 f"dr-xr-xr-x -> dr-xr-sr-- {d_fou}",
+                f"drwxrwxr-x -> drwxr-sr-- {tdr}",
                 f"drwxrwxr-x -> drwxr-sr-- {d_thr}",
             ] )
 
+            self.assertEqual( stat.S_IMODE(  tdr.lstat().st_mode), 0o2754 )
             self.assertEqual( stat.S_IMODE(f_one.lstat().st_mode), 0o0605 )
             self.assertEqual( stat.S_IMODE(f_two.lstat().st_mode), 0o0505 )
             self.assertEqual( stat.S_IMODE(d_thr.lstat().st_mode), 0o2754 )

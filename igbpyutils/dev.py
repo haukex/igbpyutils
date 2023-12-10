@@ -29,11 +29,9 @@ import argparse
 import subprocess
 from stat import S_IXUSR
 from pathlib import Path
-from itertools import chain
 from typing import NamedTuple, Optional
 from collections.abc import Sequence
-from more_itertools import unique_everseen
-from igbpyutils.file import Filename, to_Paths
+from igbpyutils.file import Filename, cmdline_rglob, autoglob
 
 class ResultLevel(enum.IntEnum):
     """A severity level enum for :class:`ScriptLibResult`.
@@ -169,8 +167,7 @@ def check_script_vs_lib_cli() -> None:
     parser.add_argument('paths', help="the paths to check (directories searched recursively)", nargs='*')
     args = parser.parse_args()
     issues :int = 0
-    for path in unique_everseen( chain.from_iterable(
-            pth.rglob('*') if pth.is_dir() else (pth,) for pth in ( to_Paths(args.paths) if args.paths else (Path(),) ) ) ):
+    for path in cmdline_rglob(autoglob(args.paths)):
         if not path.is_file() or not path.suffix.lower()=='.py': continue
         result = check_script_vs_lib(path, exec_from_git=args.exec_git)
         if result.level>=ResultLevel.WARNING or args.verbose or args.notice and result.level>=ResultLevel.NOTICE:

@@ -4,10 +4,14 @@ Changelog for ``igbpyutils``
 Changelog
 ---------
 
-v0.4.0 - Fri Dec  8 2023
+v0.4.0 - Sun Dec 10 2023
     - Changed :func:`~igbpyutils.file.autoglob` to detect current shell
       via environment variables instead of ``sys.platform``
     - Added :func:`igbpyutils.dev.generate_coveragerc` and CLI
+    - Added and used :func:`igbpyutils.file.cmdline_rglob`
+        - *Note:* This changes the behavior of the command-line tools included in
+          this project slightly in that a directory specified on the command line
+          is now also processed, instead of just its contents.
 
 v0.3.2 - Thu Nov  2 2023
     - Added ``--add*`` options to ``simple-perms`` tool

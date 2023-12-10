@@ -31,13 +31,12 @@ import argparse
 from pathlib import Path
 from typing import Union
 from gzip import GzipFile
-from itertools import chain
 from functools import singledispatch
 from contextlib import contextmanager
 from collections.abc import Generator, Iterable
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 from stat import S_IWUSR, S_IXUSR, S_IMODE, S_ISDIR, S_ISLNK, filemode, S_IFMT
-from more_itertools import unique_everseen
+from igbpyutils.iter import is_unique_everseen
 
 # Possible To-Do for Later: an idea: implement something like https://stackoverflow.com/q/12593576
 
@@ -119,6 +118,32 @@ def autoglob(files :Iterable[str], *, force :bool=False) -> Generator[str, None,
             else: yield f
     else:
         yield from files
+
+def cmdline_rglob(paths :AnyPaths) -> Generator[Path, None, None]:
+    """Given a list of filenames and directories, such as might be given on the command line, return each input item,
+    and also return the result of :meth:`Path.rglob('*')<pathlib.Path.rglob>` for each item that is a directory.
+
+    If the given list is empty, use :class:`Path()<pathlib.PurePath>` instead, i.e. the current directory,
+    but only its contents are included in the output, not the directory itself;
+    to get that you must explicitly pass the directory as an input.
+
+    :meth:`pathlib.Path.absolute` is used to remove duplicates from the output to the best of its ability.
+    This is used instead of :meth:`pathlib.Path.resolve` because that resolves symlinks and therefore
+    would cause unexpected results for programs that need to see symlinks.
+
+    :seealso: :func:`autoglob` can be used on the list of paths before passing it to this function."""
+    def path_gen():
+        if paths:
+            for pth in to_Paths(paths):
+                yield pth
+                if pth.is_dir():
+                    yield from pth.rglob('*')
+        else:
+            yield from Path().rglob('*')
+    for isuniq in is_unique_everseen( (path := p).absolute() for p in path_gen() ):
+        if isuniq:
+            # noinspection PyUnboundLocalVariable
+            yield path
 
 class Pushd:  # cover-req-lt3.11
     """A context manager that temporarily changes the current working directory.
@@ -217,6 +242,9 @@ def replace_symlink(src :Filename, dst :Filename, *, missing_ok :bool=False):
     chance for race conditions, so this function is primarily suited for situations with a single
     writer and multiple readers.
     Multiple writers will need to be coordinated with external locking mechanisms.
+
+    :seealso: :func:`replace_link` can do the same, but using a temporary directory instead of
+        a temporary file in the same directory as the target file.
     """
     if os.name != 'posix':  # pragma: no cover
         raise NotImplementedError("only available on POSIX systems")
@@ -316,8 +344,7 @@ def simple_perms_cli() -> None:
     add_perm = S_IMODE(int(args.add, 8)) if args.add else 0
     add_dir_perm = S_IMODE(int(args.add_dir, 8)) if args.add_dir else 0
     add_file_perm = S_IMODE(int(args.add_file, 8)) if args.add_file else 0
-    for path in unique_everseen( chain.from_iterable(
-            pth.rglob('*') if pth.is_dir() else (pth,) for pth in ( to_Paths(args.paths) if args.paths else (Path(),) ) ) ):
+    for path in cmdline_rglob(autoglob(args.paths)):
         mode = path.lstat().st_mode
         perm, sugg = simple_perms(mode, group_write=args.group_write)
         if not S_ISLNK(mode):
