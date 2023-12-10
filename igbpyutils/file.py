@@ -133,12 +133,12 @@ def cmdline_rglob(paths :AnyPaths) -> Generator[Path, None, None]:
 
     :seealso: :func:`autoglob` can be used on the list of paths before passing it to this function."""
     def path_gen():
-        if p := list(to_Paths(paths)):
-            for pth in p:
-                yield pth
-                if pth.is_dir():
-                    yield from pth.rglob('*')
-        else:
+        cnt = 0
+        for cnt, pth in enumerate(to_Paths(paths), start=1):
+            yield pth
+            if pth.is_dir():
+                yield from pth.rglob('*')
+        if not cnt:
             yield from Path().rglob('*')
     for isuniq in is_unique_everseen( (path := p).absolute() for p in path_gen() ):
         if isuniq:
