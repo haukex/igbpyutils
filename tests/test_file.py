@@ -24,14 +24,13 @@ import os
 import sys
 import stat
 import unittest
-from io import StringIO
+import warnings
 from pathlib import Path
 from typing import Optional
 from unittest.mock import patch
-from contextlib import redirect_stdout
 from tempfile import TemporaryDirectory, NamedTemporaryFile
 from igbpyutils.file import (to_Paths, autoglob, Pushd, filetypestr, is_windows_filename_bad, replacer, replace_symlink, replace_link,
-                             NamedTempFileDeleteLater, simple_perms, simple_perms_cli, cmdline_rglob)
+                             NamedTempFileDeleteLater, simple_perms, cmdline_rglob)
 
 class TestFileUtils(unittest.TestCase):
 
@@ -419,152 +418,17 @@ class TestFileUtils(unittest.TestCase):
             (0o644|stat.S_ISUID|stat.S_ISGID|stat.S_ISVTX,
              0o644, 0o755, 0o664, 0o775),  # noqa: E127
         )
-        for mode,sugg,dr,gw,gwdr in testcases:
-            self.assertEqual( (mode,sugg), simple_perms(mode|stat.S_IFREG) )
-            self.assertEqual( (mode,dr),   simple_perms(mode|stat.S_IFDIR) )
-            self.assertEqual( (mode,gw),   simple_perms(mode|stat.S_IFREG, group_write=True) )
-            self.assertEqual( (mode,gwdr), simple_perms(mode|stat.S_IFDIR, group_write=True) )
-        # symlink
-        lmode = stat.S_IFLNK|stat.S_IRWXU|stat.S_IRWXG|stat.S_IRWXO
-        lperm = stat.S_IMODE(lmode)
-        self.assertEqual( (lperm,lperm), simple_perms(lmode) )
-
-    @unittest.skipIf(condition=sys.platform.startswith('win32'), reason='not on Windows')
-    def test_simple_perms_cli(self):
-        with TemporaryDirectory() as td:
-            tdr = Path(td)
-            os.chmod(tdr, 0o755)
-            f_one = tdr / 'one.txt'
-            f_one.touch()
-            os.chmod(f_one, 0o644)
-            f_two = tdr / 'two.txt'
-            f_two.touch()
-            os.chmod(f_two, 0o600)
-            s_lnk = tdr / 'link.txt'
-            os.symlink(f_one, s_lnk)
-            sym_mode = stat.filemode(s_lnk.lstat().st_mode)  # apparently different on OSX and Linux
-
-            out = StringIO()
-            sys.argv = ["simple-perms", str(tdr)]
-            with (redirect_stdout(out), patch('argparse.ArgumentParser.exit') as mock):
-                simple_perms_cli()
-            mock.assert_called_once_with(1)
-            self.assertEqual( sorted(out.getvalue().splitlines()), [
-                f"-rw------- -> -rw-r--r-- {f_two}",
-            ] )
-
-            out = StringIO()
-            sys.argv = ["simple-perms", '-u', '077', str(tdr)]
-            with (redirect_stdout(out), patch('argparse.ArgumentParser.exit') as mock):
-                simple_perms_cli()
-            mock.assert_called_once_with(2)
-            self.assertEqual( sorted(out.getvalue().splitlines()), [
-                f"-rw-r--r-- -> -rw------- {f_one}",
-                f"drwxr-xr-x -> drwx------ {tdr}",
-            ] )
-
-            out = StringIO()
-            sys.argv = ["simple-perms", '-u', '027', str(tdr)]
-            with (redirect_stdout(out), patch('argparse.ArgumentParser.exit') as mock):
-                simple_perms_cli()
-            mock.assert_called_once_with(3)
-            self.assertEqual( sorted(out.getvalue().splitlines()), [
-                f"-rw------- -> -rw-r----- {f_two}",
-                f"-rw-r--r-- -> -rw-r----- {f_one}",
-                f"drwxr-xr-x -> drwxr-x--- {tdr}",
-            ] )
-
-            out = StringIO()
-            sys.argv = ["simple-perms", '-v', str(tdr)]
-            with (redirect_stdout(out), patch('argparse.ArgumentParser.exit') as mock):
-                simple_perms_cli()
-            mock.assert_called_once_with(1)
-            self.assertEqual( sorted(out.getvalue().splitlines()), [
-                f"-rw------- -> -rw-r--r-- {f_two}",
-                f"-rw-r--r-- ok -rw-r--r-- {f_one}",
-                f"drwxr-xr-x ok drwxr-xr-x {tdr}",
-                f"{sym_mode} ok {sym_mode} {s_lnk}",
-            ] )
-
-            self.assertEqual( stat.S_IMODE(f_one.lstat().st_mode), 0o644 )
-            self.assertEqual( stat.S_IMODE(f_two.lstat().st_mode), 0o600 )
-
-            out = StringIO()
-            sys.argv = ["simple-perms", '-m', str(tdr)]
-            with (redirect_stdout(out), patch('argparse.ArgumentParser.exit') as mock):
-                simple_perms_cli()
-            mock.assert_called_once_with(0)
-            self.assertEqual( sorted(out.getvalue().splitlines()), [
-                f"-rw------- -> -rw-r--r-- {f_two}",
-            ] )
-
-            self.assertEqual( stat.S_IMODE(f_one.lstat().st_mode), 0o644 )
-            self.assertEqual( stat.S_IMODE(f_two.lstat().st_mode), 0o644 )
-
-            os.chmod(f_one, 0o441)
-            os.chmod(f_two, stat.S_IXUSR)
-            d_thr = tdr/'three'
-            d_thr.mkdir()
-            os.chmod(d_thr, 0o600)
-            d_fou = tdr/'four'
-            d_fou.mkdir()
-            os.chmod(d_fou, 0o111)
-
-            out = StringIO()
-            sys.argv = ["simple-perms", '-m', str(tdr)]
-            with (redirect_stdout(out), patch('argparse.ArgumentParser.exit') as mock):
-                simple_perms_cli()
-            mock.assert_called_once_with(0)
-            self.assertEqual( sorted(out.getvalue().splitlines()), [
-                f"---x------ -> -r-xr-xr-x {f_two}",
-                f"-r--r----x -> -r--r--r-- {f_one}",
-                f"d--x--x--x -> dr-xr-xr-x {d_fou}",
-                f"drw------- -> drwxr-xr-x {d_thr}",
-            ] )
-
-            self.assertEqual( stat.S_IMODE(  tdr.lstat().st_mode), 0o755 )
-            self.assertEqual( stat.S_IMODE(f_one.lstat().st_mode), 0o444 )
-            self.assertEqual( stat.S_IMODE(f_two.lstat().st_mode), 0o555 )
-            self.assertEqual( stat.S_IMODE(d_thr.lstat().st_mode), 0o755 )
-            self.assertEqual( stat.S_IMODE(d_fou.lstat().st_mode), 0o555 )
-
-            os.chmod(f_one, 0o641)
-
-            out = StringIO()
-            sys.argv = ["simple-perms", '-mg', str(tdr)]
-            with (redirect_stdout(out), patch('argparse.ArgumentParser.exit') as mock):
-                simple_perms_cli()
-            mock.assert_called_once_with(0)
-            self.assertEqual( sorted(out.getvalue().splitlines()), [
-                f"-rw-r----x -> -rw-rw-r-- {f_one}",
-                f"drwxr-xr-x -> drwxrwxr-x {tdr}",
-                f"drwxr-xr-x -> drwxrwxr-x {d_thr}",
-            ] )
-
-            self.assertEqual( stat.S_IMODE(  tdr.lstat().st_mode), 0o775 )
-            self.assertEqual( stat.S_IMODE(f_one.lstat().st_mode), 0o664 )
-            self.assertEqual( stat.S_IMODE(f_two.lstat().st_mode), 0o555 )
-            self.assertEqual( stat.S_IMODE(d_thr.lstat().st_mode), 0o775 )
-            self.assertEqual( stat.S_IMODE(d_fou.lstat().st_mode), 0o555 )
-
-            out = StringIO()
-            sys.argv = ["simple-perms", '-m', '-u077', '-a004', '-d2050', '-f001', str(tdr)]
-            with (redirect_stdout(out), patch('argparse.ArgumentParser.exit') as mock):
-                simple_perms_cli()
-            mock.assert_called_once_with(0)
-            self.assertEqual( sorted(out.getvalue().splitlines()), [
-                f"-r-xr-xr-x -> -r-x---r-x {f_two}",
-                f"-rw-rw-r-- -> -rw----r-x {f_one}",
-                f"dr-xr-xr-x -> dr-xr-sr-- {d_fou}",
-                f"drwxrwxr-x -> drwxr-sr-- {tdr}",
-                f"drwxrwxr-x -> drwxr-sr-- {d_thr}",
-            ] )
-
-            self.assertEqual( stat.S_IMODE(  tdr.lstat().st_mode), 0o2754 )
-            self.assertEqual( stat.S_IMODE(f_one.lstat().st_mode), 0o0605 )
-            self.assertEqual( stat.S_IMODE(f_two.lstat().st_mode), 0o0505 )
-            self.assertEqual( stat.S_IMODE(d_thr.lstat().st_mode), 0o2754 )
-            self.assertEqual( stat.S_IMODE(d_fou.lstat().st_mode), 0o2554 )
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            for mode,sugg,dr,gw,gwdr in testcases:
+                self.assertEqual( (mode,sugg), simple_perms(mode|stat.S_IFREG) )
+                self.assertEqual( (mode,dr),   simple_perms(mode|stat.S_IFDIR) )
+                self.assertEqual( (mode,gw),   simple_perms(mode|stat.S_IFREG, group_write=True) )
+                self.assertEqual( (mode,gwdr), simple_perms(mode|stat.S_IFDIR, group_write=True) )
+            # symlink
+            lmode = stat.S_IFLNK|stat.S_IRWXU|stat.S_IRWXG|stat.S_IRWXO
+            lperm = stat.S_IMODE(lmode)
+            self.assertEqual( (lperm,lperm), simple_perms(lmode) )
 
 if __name__ == '__main__':  # pragma: no cover
     unittest.main()

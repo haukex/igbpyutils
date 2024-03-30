@@ -201,6 +201,7 @@ def logging_config(*,
     Other defaults are: Files are always encoded with UTF-8, and any existing handlers are always removed.
 
     Note I also recommend using :func:`logging.captureWarnings`."""
+    #TODO: Actually, logging.captureWarnings doesn't make a very good-looking logging message; we might want to write our own version...
     #TODO Later: Consider adding a function that only checks and/or modifies the formatters of existing handlers
     root = logging.getLogger()
     for hnd in root.handlers[:]:  # attribute is not documented, but this is what logging.basicConfig does

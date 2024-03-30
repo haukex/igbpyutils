@@ -4,6 +4,13 @@ Changelog for ``igbpyutils``
 Changelog
 ---------
 
+v0.5.0 - Sat Mar 30 2024
+    - **REMOVED** ``simple-perms`` and **deprecated** :func:`~igbpyutils.file.simple_perms`
+        - Use https://pypi.org/project/simple-perms/ instead.
+    - **Deprecated** :func:`igbpyutils.iter.is_unique_everseen`
+        - Use :func:`more_itertools.classify_unique` instead.
+    - Added ``cover-OS`` tags to :func:`~igbpyutils.dev.generate_coveragerc`
+
 v0.4.1 - Sun Dec 10 2023
     - Fix :func:`~igbpyutils.file.cmdline_rglob` on empty generator
 

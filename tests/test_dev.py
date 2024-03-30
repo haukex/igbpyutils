@@ -163,7 +163,7 @@ Windows:
 |  1  |  1  |  1  | Bad: both "if" and script       |
 +-----+-----+-----+---------------------------------+
 
-Possible To-Do for Later: Would be cool if the function automatically detected a git repo and check its perms... 
+Possible To-Do for Later: Would be cool if the function *automatically* detected a git repo and check its perms...
 """
 win_test_cases = (
     ScriptLibResult(Path(), ResultLevel.INFO, "File looks like a normal library",
@@ -286,48 +286,53 @@ class TestDevUtils(unittest.TestCase):
                     generate_coveragerc_cli()
                 mock.assert_called_once_with(0)
                 self.assertEqual( out.getvalue(), "" )
+            os_tags = ['cover-linux', 'cover-win32', 'cover-darwin']
+            if sys.platform.startswith('linux'): os_tags.remove('cover-linux')
+            elif sys.platform.startswith('win32'): os_tags.remove('cover-win32')
+            elif sys.platform.startswith('darwin'): os_tags.remove('cover-darwin')
+            os_tagstr = '\n'.join( f"    {t}" for t in os_tags )
             self.assertEqual(['.coveragerc3.10', '.coveragerc3.11', '.coveragerc3.12', '.coveragerc3.9'],
                 sorted( x.name for x in td.iterdir() ) )
             with open(td/'.coveragerc3.9', 'r', encoding='ASCII') as fh:
                 self.assertEqual(fh.read(), dedent("""\
                     # Generated .coveragerc for Python 3.9
                     [report]
-                    exclude_lines =
-                        pragma: no cover
+                    exclude_also =
+                    OS_TAGS
                         cover-req-ge3\\.10
                         cover-req-ge3\\.11
                         cover-req-ge3\\.12
-                    """))
+                    """).replace('OS_TAGS', os_tagstr))
             with open(td/'.coveragerc3.10', 'r', encoding='ASCII') as fh:
                 self.assertEqual(fh.read(), dedent("""\
                     # Generated .coveragerc for Python 3.10
                     [report]
-                    exclude_lines =
-                        pragma: no cover
+                    exclude_also =
+                    OS_TAGS
                         cover-req-lt3\\.10
                         cover-req-ge3\\.11
                         cover-req-ge3\\.12
-                    """))
+                    """).replace('OS_TAGS', os_tagstr))
             with open(td/'.coveragerc3.11', 'r', encoding='ASCII') as fh:
                 self.assertEqual(fh.read(), dedent("""\
                     # Generated .coveragerc for Python 3.11
                     [report]
-                    exclude_lines =
-                        pragma: no cover
+                    exclude_also =
+                    OS_TAGS
                         cover-req-lt3\\.10
                         cover-req-lt3\\.11
                         cover-req-ge3\\.12
-                    """))
+                    """).replace('OS_TAGS', os_tagstr))
             with open(td/'.coveragerc3.12', 'r', encoding='ASCII') as fh:
                 self.assertEqual(fh.read(), dedent("""\
                     # Generated .coveragerc for Python 3.12
                     [report]
-                    exclude_lines =
-                        pragma: no cover
+                    exclude_also =
+                    OS_TAGS
                         cover-req-lt3\\.10
                         cover-req-lt3\\.11
                         cover-req-lt3\\.12
-                    """))
+                    """).replace('OS_TAGS', os_tagstr))
 
             od = td / 'foo'
             od.mkdir()
@@ -342,12 +347,12 @@ class TestDevUtils(unittest.TestCase):
                 self.assertEqual(fh.read(), dedent("""\
                     # Generated .coveragerc for Python 3.11
                     [report]
-                    exclude_lines =
-                        pragma: no cover
+                    exclude_also =
+                    OS_TAGS
                         cover-req-lt3\\.10
                         cover-req-lt3\\.11
                         cover-req-ge3\\.12
-                    """))
+                    """).replace('OS_TAGS', os_tagstr))
         # error cases
         with self.assertRaises(ValueError):
             generate_coveragerc(minver=9, maxver=9)

@@ -101,6 +101,7 @@ def check_script_vs_lib(path :Filename, *, known_shebangs :Sequence[str] = ('#!/
     ignore_exec_bit = _IS_WINDOWS
     if exec_from_git:
         flags &= ~ScriptLibFlags.EXEC_BIT
+        #TODO: This fails for newly added files - `git ls-files --stage` instead?
         res = subprocess.run(['git','ls-tree','HEAD',pth.name], cwd=pth.parent,
                              encoding='UTF-8', check=True, capture_output=True)
         assert not res.returncode and not res.stderr
@@ -181,6 +182,9 @@ def generate_coveragerc(*, minver :int, maxver :int, forver :Optional[int]=None,
 
     These generated files provide tags such as ``cover-req-ge3.10`` and ``cover-req-lt3.10`` that can be used
     to exclude source code lines on ranges of Python versions. This tool is used within this project itself.
+    In addition, the tags ``cover-linux``, ``cover-win32``, and ``cover-darwin`` are supplied based on ``sys.platform``
+    for code for which coverage is only expected on those OSes (more such tags could be added in the future).
+    Because the generated files use the ``exclude_also`` config option, Coverage.py 7.2.0 or greater is required.
 
     :param minver: The minimum Python minor version which to include in the generated tags, inclusive.
     :param maxver: The maximum Python minor version which to include in the generated tags, exclusive.
@@ -189,6 +193,9 @@ def generate_coveragerc(*, minver :int, maxver :int, forver :Optional[int]=None,
     :param outdir: The path into which to output the files. Defaults to the current working directory.
     :param verbose: If true, ``print`` a message for each file written.
     """
+    #TODO: Investigate https://github.com/nedbat/coveragepy/issues/1699
+    # https://github.com/asottile/covdefaults - does a bit too much for me
+    # https://github.com/wemake-services/coverage-conditional-plugin
     versions = range(minver, maxver)
     if not versions:
         raise ValueError(f"No versions in range")
@@ -197,8 +204,11 @@ def generate_coveragerc(*, minver :int, maxver :int, forver :Optional[int]=None,
     if not outdir: outdir = Path()
     for vc in versions if forver is None else (forver,):
         fn = outdir / f".coveragerc3.{vc}"
-        with fn.open('w', encoding='ASCII', newline='\n') as fh:
-            print(f"# Generated .coveragerc for Python 3.{vc}\n[report]\nexclude_lines =\n    pragma: no cover", file=fh)
+        with fn.open('x', encoding='ASCII', newline='\n') as fh:
+            print(f"# Generated .coveragerc for Python 3.{vc}\n[report]\nexclude_also =", file=fh)
+            if not sys.platform.startswith('linux'): print("    cover-linux", file=fh)
+            if not sys.platform.startswith('win32'): print("    cover-win32", file=fh)
+            if not sys.platform.startswith('darwin'): print("    cover-darwin", file=fh)
             for v in versions[1:]:
                 print(f"    cover-req-" + re.escape(f"{'ge' if v>vc else 'lt'}3.{v}"), file=fh)
         if verbose: print(f"Wrote {fn}")

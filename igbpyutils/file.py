@@ -27,7 +27,7 @@ import sys
 import uuid
 import typing
 import io
-import argparse
+import warnings
 from pathlib import Path
 from typing import Union
 from gzip import GzipFile
@@ -35,8 +35,8 @@ from functools import singledispatch
 from contextlib import contextmanager
 from collections.abc import Generator, Iterable
 from tempfile import NamedTemporaryFile, TemporaryDirectory
-from stat import S_IWUSR, S_IXUSR, S_IMODE, S_ISDIR, S_ISLNK, filemode, S_IFMT
-from igbpyutils.iter import is_unique_everseen
+from stat import S_IWUSR, S_IXUSR, S_IMODE, S_ISDIR, S_ISLNK
+from more_itertools import classify_unique
 
 # Possible To-Do for Later: an idea: implement something like https://stackoverflow.com/q/12593576
 
@@ -140,9 +140,8 @@ def cmdline_rglob(paths :AnyPaths) -> Generator[Path, None, None]:
                 yield from pth.rglob('*')
         if not cnt:
             yield from Path().rglob('*')
-    for isuniq in is_unique_everseen( (path := p).absolute() for p in path_gen() ):
-        if isuniq:
-            # noinspection PyUnboundLocalVariable
+    for path, uniq_just, uniq_ever in classify_unique(path_gen(), key=lambda k: k.absolute()):
+        if uniq_ever:
             yield path
 
 class Pushd:  # cover-req-lt3.11
@@ -313,6 +312,9 @@ def simple_perms(st_mode :int, *, group_write :bool = False) -> tuple[int, int]:
     """This function tests a file's permission bits to see if they are in a small set of "simple" permissions
     and suggests new permission bits if they are not.
 
+    .. deprecated:: 0.5.0
+        Use https://pypi.org/project/simple-perms/ instead.
+
     The set of "simple" permissions is (0o444, 0o555, 0o644, 0o755) or, when ``group_write`` is :obj:`True`, (0o444, 0o555, 0o664, 0o775).
 
     :param st_mode: The file's mode bits from :attr:`os.stat_result.st_mode`, such as returned by :func:`os.lstat` or :meth:`pathlib.Path.lstat`.
@@ -322,39 +324,6 @@ def simple_perms(st_mode :int, *, group_write :bool = False) -> tuple[int, int]:
         The two values may be equal indicating that no change is suggested.
         No changes are suggested for symbolic links.
     """
+    warnings.warn("Use suggest_perms from package simple-perms instead", DeprecationWarning)
     return S_IMODE(st_mode), ( S_IMODE(st_mode) if S_ISLNK(st_mode)
                                else _perm_map[group_write][ ( st_mode|( S_IXUSR if S_ISDIR(st_mode) else 0 ) ) & (S_IWUSR|S_IXUSR) ] )
-
-def simple_perms_cli() -> None:
-    """Command-line interface for :func:`simple_perms`.
-
-    If the module and script have been installed correctly, you should be able to run ``simple-perms -h`` for help."""
-    parser = argparse.ArgumentParser(description='Check for Simple Permissions')
-    parser.add_argument('-v', '--verbose', help="list all files", action="store_true")
-    parser.add_argument('-g', '--group-write', help="the group should have write permissions", action="store_true")
-    parser.add_argument('-m', '--modify', help="automatically modify files' permissions", action="store_true")
-    parser.add_argument('-u', '--umask', help="apply a mask to the suggested permissions (octal)")
-    parser.add_argument('-a', '--add', help="add these permission bits to all files/dirs (octal)")
-    parser.add_argument('-d', '--add-dir', help="add these permission bits to dirs (octal)")
-    parser.add_argument('-f', '--add-file', help="add these permission bits to non-dirs (octal)")
-    parser.add_argument('paths', help="the paths to check (directories searched recursively)", nargs='*')
-    args = parser.parse_args()
-    issues :int = 0
-    umask = S_IMODE(int(args.umask, 8)) if args.umask else 0
-    add_perm = S_IMODE(int(args.add, 8)) if args.add else 0
-    add_dir_perm = S_IMODE(int(args.add_dir, 8)) if args.add_dir else 0
-    add_file_perm = S_IMODE(int(args.add_file, 8)) if args.add_file else 0
-    for path in cmdline_rglob(autoglob(args.paths)):
-        mode = path.lstat().st_mode
-        perm, sugg = simple_perms(mode, group_write=args.group_write)
-        if not S_ISLNK(mode):
-            sugg &= ~umask
-            sugg |= add_perm
-            sugg |= add_dir_perm if S_ISDIR(mode) else add_file_perm
-        if perm != sugg:
-            print(f"{filemode(mode)} -> {filemode(S_IFMT(mode)|S_IMODE(sugg))} {path}")
-            if args.modify: os.chmod(path, sugg)
-            else: issues += 1
-        elif args.verbose:
-            print(f"{filemode(mode)} ok {filemode(mode)} {path}")
-    parser.exit(issues)

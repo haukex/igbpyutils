@@ -21,7 +21,9 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see https://www.gnu.org/licenses/
 """
 import unittest
+import warnings
 from igbpyutils.iter import no_duplicates, SizedCallbackIterator, is_unique_everseen, zip_strict
+from more_itertools import classify_unique
 
 class TestIterTools(unittest.TestCase):
 
@@ -69,29 +71,28 @@ class TestIterTools(unittest.TestCase):
         self.assertEqual(cbvals, [(0,'a'), (1,'bb'), (2,'ccc'), (3,'dddd'), (4,'eeeee'), (5,'ffffff')] )
 
     def test_is_unique_everseen(self):
-        # taken from more-itertools docs
-        self.assertEqual( tuple(is_unique_everseen('mississippi')),
-                          (True,True,True,False,False,False,False,False,True,False,False) )
-        self.assertEqual( tuple(is_unique_everseen('AaaBbbCccAaa', key=str.lower)),
-                          (True,False,False,True,False,False,True,False,False,False,False,False) )
-        self.assertEqual( tuple(is_unique_everseen('AAAABBBCCDAABBB')),
-                          (True,False,False,False,True,False,False,True,False,True,False,False,False,False,False) )
-        self.assertEqual( tuple(is_unique_everseen('ABBcCAD', key=str.lower)),
-                          (True,True,False,True,False,False,True) )
-        # taken from test_no_duplicates below
-        self.assertEqual( tuple(is_unique_everseen( ( "foo", "bar", "quz", 123 ) )),
-                          (True,True,True,True) )
-        self.assertEqual( tuple(is_unique_everseen( [ "foo", ["bar", "quz"] ] )),
-                          (True,True) )
-        self.assertEqual( tuple(is_unique_everseen( ("foo", 123, "bar", "foo") )),
-                          (True,True,True,False) )
-        self.assertEqual( tuple(is_unique_everseen( ("foo", "bar", "quz", "Foo"), key=str.lower )),
-                          (True,True,True,False) )
-        self.assertEqual( tuple(is_unique_everseen([ ["foo","bar"], "quz", ["quz"], ["foo","bar"], "quz" ])),
-                          (True,True,True,False,False) )
-        # alternative to no_duplicates if one doesn't need the return values:
-        self.assertFalse( not all(is_unique_everseen((1,2,3))) )
-        self.assertTrue( not all(is_unique_everseen((1,2,3,1))) )
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            # taken from more-itertools docs
+            self.assertEqual( tuple(is_unique_everseen('mississippi')),
+                              (True,True,True,False,False,False,False,False,True,False,False) )
+            self.assertEqual( tuple(is_unique_everseen('AaaBbbCccAaa', key=str.lower)),
+                              (True,False,False,True,False,False,True,False,False,False,False,False) )
+            self.assertEqual( tuple(is_unique_everseen('AAAABBBCCDAABBB')),
+                              (True,False,False,False,True,False,False,True,False,True,False,False,False,False,False) )
+            self.assertEqual( tuple(is_unique_everseen('ABBcCAD', key=str.lower)),
+                              (True,True,False,True,False,False,True) )
+            # taken from test_no_duplicates below
+            self.assertEqual( tuple(is_unique_everseen( ( "foo", "bar", "quz", 123 ) )),
+                              (True,True,True,True) )
+            self.assertEqual( tuple(is_unique_everseen( [ "foo", ["bar", "quz"] ] )),
+                              (True,True) )
+            self.assertEqual( tuple(is_unique_everseen( ("foo", 123, "bar", "foo") )),
+                              (True,True,True,False) )
+            self.assertEqual( tuple(is_unique_everseen( ("foo", "bar", "quz", "Foo"), key=str.lower )),
+                              (True,True,True,False) )
+            self.assertEqual( tuple(is_unique_everseen([ ["foo","bar"], "quz", ["quz"], ["foo","bar"], "quz" ])),
+                              (True,True,True,False,False) )
 
     def test_no_duplicates(self):
         in1 = ( "foo", "bar", "quz", 123 )
@@ -104,6 +105,15 @@ class TestIterTools(unittest.TestCase):
             set(no_duplicates( ("foo", "bar", "quz", "Foo"), key=str.lower ))
         with self.assertRaises(ValueError):
             list(no_duplicates( [ ["foo","bar"], "quz", ["quz"], ["foo","bar"] ] ))
+        # documented alternative to no_duplicates if one doesn't need the return values:
+        #self.assertFalse( not all(is_unique_everseen((1,2,3))) )
+        #self.assertTrue( not all(is_unique_everseen((1,2,3,1))) )
+        self.assertFalse( not all( ever for e,just,ever in classify_unique((1,2,3)  ) ) )
+        # the "[]" in the following is required to avoid coverage complaining "didn't finish the generator expression"
+        # perhaps related:
+        # https://github.com/nedbat/coveragepy/issues/475
+        # https://github.com/nedbat/coveragepy/issues/1333
+        self.assertTrue(  not all( [ ever for e,just,ever in classify_unique((1,2,3,1)) ] ) )
 
 if __name__ == '__main__':  # pragma: no cover
     unittest.main()

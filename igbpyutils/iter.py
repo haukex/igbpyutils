@@ -25,9 +25,11 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see https://www.gnu.org/licenses/
 """
 import sys
+import warnings
 from collections.abc import Sized, Iterator, Iterable, Callable, Generator
 from typing import TypeVar, Generic, Optional, Any, overload
 from itertools import zip_longest
+from more_itertools import classify_unique
 
 _marker = object()
 _T0 = TypeVar('_T0')
@@ -93,9 +95,13 @@ def is_unique_everseen(iterable :Iterable[_V], *, key :Optional[Callable[[_V], A
     """For each element in the input iterable, return either :obj:`True` if this
     element is unique, or :obj:`False` if it is not.
 
+    .. deprecated:: 0.5.0
+        Use :func:`more_itertools.classify_unique` instead.
+
     The implementation is very similar :func:`more_itertools.unique_everseen`
     and is subject to the same performance considerations.
     """
+    warnings.warn("Use classify_unique from package more-itertools instead", DeprecationWarning)
     seen_set = set()
     seen_list = []
     for element in iterable:
@@ -122,7 +128,7 @@ def no_duplicates(iterable :Iterable[_V], *, key :Optional[Callable[[_V], Any]] 
     Remember that if you don't want to use this iterator's return values,
     but only use it for checking a list, you need to force it to execute
     by wrapping the call e.g. in a :class:`set` or :class:`list`.
-    Alternatively, use ``not all(is_unique_everseen(iterable))``.
+    Alternatively, use ``not all( ever for e,just,ever in classify_unique(iterable) )``.
 
     The ``name`` argument is only to customize the error messages.
 
@@ -132,6 +138,6 @@ def no_duplicates(iterable :Iterable[_V], *, key :Optional[Callable[[_V], Any]] 
     The implementation is very similar :func:`more_itertools.unique_everseen`
     and is subject to the same performance considerations.
     """
-    for unique in is_unique_everseen( (element:=x for x in iterable), key=key ):
-        if not unique: raise ValueError(f"duplicate {name}: {element!r}")
+    for element, uniq_just, uniq_ever in classify_unique(iterable, key=key):
+        if not uniq_ever: raise ValueError(f"duplicate {name}: {element!r}")
         else: yield element

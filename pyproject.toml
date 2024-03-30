@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "igbpyutils"
 description = "Various Python Utilities"
-version = "0.4.1"
+version = "0.5.0"
 authors = [ { name="Hauke D", email="haukex@zero-g.net" } ]
 readme = "README.rst"
 requires-python = ">=3.9"
@@ -32,7 +32,6 @@ dependencies = {file = ["requirements.txt"]}
 
 [project.scripts]
 py-check-script-vs-lib = "igbpyutils.dev:check_script_vs_lib_cli"
-simple-perms = "igbpyutils.file:simple_perms_cli"
 gen-coveragerc = "igbpyutils.dev:generate_coveragerc_cli"
 
 [project.urls]
