@@ -118,7 +118,7 @@ class TestDirIteration(unittest.TestCase):
             # remap from our FileType to unzipwalk.FileType (by enum name)
             expect = [ (pth, unzipwalk.FileType[typ.name]) for pth,typ in self.expect ]
             self.assertEqual(expect,
-                 sorted( (str(only(fnames)), ftype) for fnames, _, ftype in unzipwalk.unzipwalk(self.td, onlyfiles=False) ) )
+                 sorted( (str(only(r.names)), r.typ) for r in unzipwalk.unzipwalk(self.td) ) )
 
     @unittest.skipIf(sys.hexversion<0x030C00B0, "requires Python 3.12+")
     def test_path_walk(self):  # pragma: no cover
