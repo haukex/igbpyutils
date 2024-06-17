@@ -27,13 +27,14 @@ import sys
 import uuid
 import typing
 import io
+import pickle
 import warnings
 from pathlib import Path
-from typing import Union
+from typing import Union, TypeVar
 from gzip import GzipFile
 from functools import singledispatch
 from contextlib import contextmanager
-from collections.abc import Generator, Iterable
+from collections.abc import Generator, Iterable, Callable
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 from stat import S_IWUSR, S_IXUSR, S_IMODE, S_ISDIR, S_ISLNK
 from more_itertools import classify_unique
@@ -327,3 +328,39 @@ def simple_perms(st_mode :int, *, group_write :bool = False) -> tuple[int, int]:
     warnings.warn("Use suggest_perms from package simple-perms instead", DeprecationWarning)
     return S_IMODE(st_mode), ( S_IMODE(st_mode) if S_ISLNK(st_mode)
                                else _perm_map[group_write][ ( st_mode|( S_IXUSR if S_ISDIR(st_mode) else 0 ) ) & (S_IWUSR|S_IXUSR) ] )
+
+_T = TypeVar('_T')
+def simple_cache(cache_file :Filename, *, verbose :bool=False) -> Callable[[Callable[[], _T]], Callable[[], _T]]:
+    """A very basic caching decorator for functions that take no arguments, intended for caching data that is expensive to generate.
+
+    On the first call of the function, its return value is saved to the specified file on disk via :mod:`pickle`,
+    and on subsequent calls that file is loaded instead of calling the wrapped function.
+    The original function can be called via the ``__wrapped__`` attribute on the outer function.
+    Currently, the only way to clear the cache is by deleting the file.
+
+    No file locking or other synchronization is performed, so this is likely not safe for threading or multiple processes.
+
+    No type checking is performed on the data loaded from the file.
+    **WARNING:** Please see the security warnings in the :mod:`pickle` documentation!
+
+    For much more powerful caching and memoization, look at something like ``diskcache`` or similar modules.
+    """
+    cf = Path(cache_file)
+    def decorator(orig_func :Callable[[], _T]) -> Callable[[], _T]:
+        def wrapper() -> _T:
+            data :_T
+            if cf.exists():
+                with cf.open('rb') as ifh:
+                    data = pickle.load(ifh)
+                if verbose:
+                    print(f"Read {cf}", file=sys.stderr)
+            else:
+                data = orig_func()
+                with cf.open('wb') as ofh:
+                    pickle.dump(data, ofh)
+                if verbose:
+                    print(f"Wrote {cf}", file=sys.stderr)
+            return data
+        wrapper.__wrapped__ = orig_func  # type: ignore[attr-defined]
+        return wrapper
+    return decorator

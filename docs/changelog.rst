@@ -4,6 +4,9 @@ Changelog for ``igbpyutils``
 Changelog
 ---------
 
+v0.6.0 - Mon Jun 17 2024
+    - Added :func:`~igbpyutils.file.simple_cache`.
+
 v0.5.0 - Sat Mar 30 2024
     - **REMOVED** ``simple-perms`` and **deprecated** :func:`~igbpyutils.file.simple_perms`
         - Use https://pypi.org/project/simple-perms/ instead.

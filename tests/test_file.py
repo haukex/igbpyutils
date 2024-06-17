@@ -20,6 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see https://www.gnu.org/licenses/
 """
+import io
 import os
 import sys
 import stat
@@ -28,9 +29,10 @@ import warnings
 from pathlib import Path
 from typing import Optional
 from unittest.mock import patch
+from contextlib import redirect_stderr
 from tempfile import TemporaryDirectory, NamedTemporaryFile
 from igbpyutils.file import (to_Paths, autoglob, Pushd, filetypestr, is_windows_filename_bad, replacer, replace_symlink, replace_link,
-                             NamedTempFileDeleteLater, simple_perms, cmdline_rglob)
+                             NamedTempFileDeleteLater, simple_perms, cmdline_rglob, simple_cache)
 
 class TestFileUtils(unittest.TestCase):
 
@@ -429,6 +431,32 @@ class TestFileUtils(unittest.TestCase):
             lmode = stat.S_IFLNK|stat.S_IRWXU|stat.S_IRWXG|stat.S_IRWXO
             lperm = stat.S_IMODE(lmode)
             self.assertEqual( (lperm,lperm), simple_perms(lmode) )
+
+    def test_simple_cache(self):
+        with (TemporaryDirectory() as tempdir, redirect_stderr(io.StringIO()) as err):
+            call_count = 0
+            cf = Path(tempdir, '.test.cache')
+            @simple_cache(cf)
+            def expensive_func():
+                nonlocal call_count
+                call_count += 1
+                return call_count
+            self.assertEqual( expensive_func(), 1 )
+            self.assertEqual( expensive_func(), 1 )
+            self.assertEqual( expensive_func(), 1 )
+            cf2 = Path(tempdir, 'test2.cache')
+            @simple_cache(cf2, verbose=True)
+            def dummy_func():
+                nonlocal call_count
+                call_count += 1
+                return call_count
+            self.assertEqual( dummy_func(), 2 )
+            self.assertEqual( dummy_func(), 2 )
+            self.assertEqual( expensive_func.__wrapped__(), 3 )
+            self.assertEqual( dummy_func.__wrapped__(), 4 )
+            self.assertEqual( expensive_func(), 1 )
+            self.assertEqual( dummy_func(), 2 )
+        self.assertEqual(err.getvalue(), f"Wrote {cf2}\nRead {cf2}\nRead {cf2}\n")
 
 if __name__ == '__main__':  # pragma: no cover
     unittest.main()
