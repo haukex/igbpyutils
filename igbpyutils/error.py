@@ -185,7 +185,7 @@ class CustomFormatter(Formatter):
 
 @runtime_checkable
 class LoggingStream(Protocol):
-    """The minimum required interface of a stream for :class:`logging.handlers.StreamHandler`, according to its documentation."""
+    """The minimum required interface of a stream for :class:`logging.StreamHandler`, according to its documentation."""
     def flush(self) -> None: ...    # pragma: no cover
     def write(self, s :str) -> int: ...    # pragma: no cover
 

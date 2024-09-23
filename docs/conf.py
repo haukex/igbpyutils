@@ -37,6 +37,8 @@ copyright = '2023 Hauke Daempfling at the IGB'
 with (Path(__file__).parent.parent/'pyproject.toml').open('rb') as fh:
     version = tomllib.load(fh)['project']['version']
 
+exclude_patterns = ['.venv*/**']
+
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx', 'sphinx.ext.viewcode']
 
 nitpicky = True

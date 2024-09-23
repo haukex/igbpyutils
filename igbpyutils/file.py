@@ -30,7 +30,7 @@ import io
 import pickle
 import warnings
 from pathlib import Path
-from typing import Union, TypeVar
+from typing import Union, TypeVar, Optional
 from gzip import GzipFile
 from functools import singledispatch
 from contextlib import contextmanager
@@ -198,6 +198,18 @@ def is_windows_filename_bad(fn :str) -> bool:
         or any( fn.upper().startswith(x+".") for x in invalidnames )
         # filenames shouldn't end on a space or period
         or fn[-1] in (' ', '.') )
+
+@contextmanager
+def open_out(filename :Optional[Filename] = None, mode='w', *, encoding='UTF-8', errors=None, newline=None):
+    """This context manager either opens the file specified and provides its file object, or,
+    if the filename is not specified or it is the string ``"-"``, ``sys.stdout`` is provided.
+
+    *Please note* that the default encoding is UTF-8, which you can of course override with the ``encoding`` parameter."""
+    if filename and filename != '-':
+        with open(filename, mode, encoding=encoding, errors=errors, newline=newline) as fh:
+            yield fh
+    else:
+        yield sys.stdout
 
 @contextmanager
 def replacer(file :Filename, *, binary :bool=False, encoding=None, errors=None, newline=None):

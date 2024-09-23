@@ -29,10 +29,10 @@ import warnings
 from pathlib import Path
 from typing import Optional
 from unittest.mock import patch
-from contextlib import redirect_stderr
+from contextlib import redirect_stderr, redirect_stdout
 from tempfile import TemporaryDirectory, NamedTemporaryFile
 from igbpyutils.file import (to_Paths, autoglob, Pushd, filetypestr, is_windows_filename_bad, replacer, replace_symlink, replace_link,
-                             NamedTempFileDeleteLater, simple_perms, cmdline_rglob, simple_cache)
+                             NamedTempFileDeleteLater, simple_perms, cmdline_rglob, simple_cache, open_out)
 
 class TestFileUtils(unittest.TestCase):
 
@@ -457,6 +457,21 @@ class TestFileUtils(unittest.TestCase):
             self.assertEqual( expensive_func(), 1 )
             self.assertEqual( dummy_func(), 2 )
         self.assertEqual(err.getvalue(), f"Wrote {cf2}\nRead {cf2}\nRead {cf2}\n")
+
+    def test_open_out(self):
+        with (TemporaryDirectory() as tempdir, redirect_stdout(io.StringIO()) as out):
+            with Pushd(tempdir):
+                with open_out(None) as fh:
+                    fh.write("Hello")
+                with open_out('') as fh:
+                    fh.write(", ")
+                with open_out('-') as fh:
+                    fh.write("World")
+                with open_out('hello') as fh:
+                    fh.write('world')
+                with open('hello', encoding='UTF-8') as fh:
+                    self.assertEqual( fh.read(), 'world' )
+        self.assertEqual( out.getvalue(), 'Hello, World' )
 
 if __name__ == '__main__':  # pragma: no cover
     unittest.main()

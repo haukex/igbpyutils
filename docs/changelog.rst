@@ -7,6 +7,7 @@ Changelog
 v0.7.0 - *not yet released*
     - Added :class:`~igbpyutils.error.LoggingStream` for better type checking
       on :func:`igbpyutils.error.logging_config`.
+    - Added :func:`igbpyutils.file.open_out`.
 
 v0.6.0 - Mon Jun 17 2024
     - Added :func:`~igbpyutils.file.simple_cache`.
