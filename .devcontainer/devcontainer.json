@@ -1,6 +1,9 @@
 // https://aka.ms/devcontainer.json
 {
-	"image": "mcr.microsoft.com/devcontainers/python:1-3.12-bookworm",
+	//"image": "mcr.microsoft.com/devcontainers/python:3.12-bookworm",
+	// Actually, we want to develop on the lowest version of Python this library supports,
+	// since backwards compatibility issues pop up more often than forward compatibility.
+	"image": "mcr.microsoft.com/devcontainers/python:3.9-bookworm",
 	"features": {
 		"ghcr.io/devcontainers/features/common-utils:2": {
 			"installZsh": false,

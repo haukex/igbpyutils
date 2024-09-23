@@ -32,7 +32,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see https://www.gnu.org/licenses/
 """
-import io
 import sys
 import time
 import asyncio
@@ -41,7 +40,7 @@ import logging
 import warnings
 import threading
 from collections.abc import Generator
-from typing import Any, Optional, Literal, TextIO, Union
+from typing import Any, Optional, Literal, Union, Protocol, runtime_checkable
 from logging import Formatter
 from pathlib import Path
 # noinspection PyPackageRequirements
@@ -184,9 +183,15 @@ class CustomFormatter(Formatter):
     def formatException(self, ei :tuple) -> str:
         return '\n'.join(javaishstacktrace(ei[1]))
 
+@runtime_checkable
+class LoggingStream(Protocol):
+    """The minimum required interface of a stream for :class:`logging.handlers.StreamHandler`, according to its documentation."""
+    def flush(self) -> None: ...    # pragma: no cover
+    def write(self, s :str) -> int: ...    # pragma: no cover
+
 def logging_config(*,
         level :int = logging.WARNING,
-        stream :Union[None, Literal[True], TextIO, io.TextIOBase] = None,
+        stream :Union[None, Literal[True], LoggingStream] = None,
         filename :Optional[Filename] = None,
         fmt :Optional[str] = '[%(asctime)s] %(levelname)s %(name)s: %(message)s' ):
     """A replacement for :func:`logging.basicConfig` that uses :class:`CustomFormatter` and has a few more useful defaults.
