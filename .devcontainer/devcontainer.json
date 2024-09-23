@@ -1,0 +1,16 @@
+// https://aka.ms/devcontainer.json
+{
+	"image": "mcr.microsoft.com/devcontainers/python:1-3.12-bookworm",
+	"features": {
+		"ghcr.io/devcontainers/features/common-utils:2": {
+			"installZsh": false,
+			"installOhMyZsh": false,
+			"installOhMyZshConfig": false,
+			"username": "none",
+			"nonFreePackages": true
+		},
+        "ghcr.io/lukewiwa/features/shellcheck:0": {},
+        "ghcr.io/guiyomh/features/vim:0": {}
+	},
+	"postCreateCommand": ".devcontainer/initialize.sh"
+}

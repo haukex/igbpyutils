@@ -129,7 +129,7 @@ def check_script_vs_lib(path :Filename, *, known_shebangs :Sequence[str] = ('#!/
                                     ast.Assign, ast.AnnAssign, ast.Assert))
               # docstring:
               and not (isinstance(node, ast.Expr) and isinstance(node.value, ast.Constant) and isinstance(node.value.value, str))):
-            why_scriptlike.append(f"{type(node).__name__}@L{node.lineno}")
+            why_scriptlike.append(f"{type(node).__name__}@L{node.lineno}")  # type: ignore[attr-defined]
     if why_scriptlike: flags |= ScriptLibFlags.SCRIPT_LIKE
     if flags&ScriptLibFlags.SHEBANG and shebang_line not in known_shebangs:
         return ScriptLibResult(pth, ResultLevel.WARNING, f"File has unrecognized shebang {shebang_line!r}", flags)
