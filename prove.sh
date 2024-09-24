@@ -9,7 +9,7 @@ else
   PYTHONWARNINGS=error PYTHONWARNDEFAULTENCODING=1 coverage run --rcfile=".coveragerc$PY_VER" --branch -m unittest "$@"
   coverage report --rcfile=".coveragerc$PY_VER" --omit='*/igbdatatools/*' --skip-covered --show-missing --fail-under=100 | grep -v 'skipped due to complete coverage'
   coverage erase
-  git clean -xf htmlcov
+  rm -rf htmlcov
   rm -f ".coveragerc$PY_VER"
   mypy --python-version "$PY_VER" igbpyutils tests
 fi
