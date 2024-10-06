@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """Test various methods to walk a directory tree.
 
 This test does not actually test any functions in this package,

@@ -1,4 +1,3 @@
-#!python3
 """Development Utility Functions
 
 Author, Copyright, and License
@@ -74,7 +73,16 @@ class ScriptLibResult(NamedTuple):
 _IS_WINDOWS = sys.platform.startswith('win32')
 _git_ls_tree_re = re.compile(r'''\A([0-7]+) blob [a-fA-F0-9]{40}\t(.+)(?:\Z|\n)''')
 
-def check_script_vs_lib(path :Filename, *, known_shebangs :Sequence[str] = ('#!/usr/bin/env python3',), exec_from_git :bool = False) -> ScriptLibResult:
+DEFAULT_SHEBANGS = (
+    '#!/usr/bin/env python3',
+    '#!/usr/bin/env python',
+    '#!/usr/bin/python3',
+    '#!/usr/bin/python',
+    '#!/usr/local/bin/python3',
+    '#!/usr/local/bin/python',
+)
+
+def check_script_vs_lib(path :Filename, *, known_shebangs :Sequence[str] = DEFAULT_SHEBANGS, exec_from_git :bool = False) -> ScriptLibResult:
     """This function analyzes a Python file to see whether it looks like a library or a script,
     and checks several features of the file for consistency.
 
@@ -82,7 +90,7 @@ def check_script_vs_lib(path :Filename, *, known_shebangs :Sequence[str] = ('#!/
     It checks whether the file...
 
     - has its execute bit set (ignored on Windows, unless ``exec_from_git`` is set)
-    - has a shebang line (``#!/usr/bin/env python3``, see also the ``known_shebangs`` parameter)
+    - has a shebang line (e.g. ``#!/usr/bin/env python3``, see also the ``known_shebangs`` parameter)
     - contains a ``if __name__=='__main__':`` line
     - contains statements other than ``class``, ``def``, etc. in the main body
 
@@ -166,6 +174,7 @@ def check_script_vs_lib_cli() -> None:
     parser.add_argument('-n', '--notice', help="show notices and include in issue count", action="store_true")
     parser.add_argument('-g', '--exec-git', help="get the exec bit from git", action="store_true")
     parser.add_argument('paths', help="the paths to check (directories searched recursively)", nargs='*')
+    #TODO: Add an option to add known shebang lines
     args = parser.parse_args()
     issues :int = 0
     for path in cmdline_rglob(autoglob(args.paths)):

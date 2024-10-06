@@ -2,7 +2,7 @@
 .PHONY: all clean
 
 all:
-	python3 -m sphinx . html
+	python -m sphinx . html
 
 clean:
 	rm -rf html

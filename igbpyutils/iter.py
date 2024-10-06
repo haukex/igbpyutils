@@ -1,4 +1,3 @@
-#!python3
 """A Few Useful Iterators
 
 Note the iterator "``gray_product``" that used to be in this module

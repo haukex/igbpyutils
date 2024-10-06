@@ -1,4 +1,3 @@
-#!python3
 """Datetime Utility Functions
 
 Author, Copyright, and License

@@ -4,10 +4,11 @@ Changelog for ``igbpyutils``
 Changelog
 ---------
 
-v0.7.0 - *not yet released*
+v0.7.0 - Sun Oct  6 2024
     - Added :class:`~igbpyutils.error.LoggingStream` for better type checking
       on :func:`igbpyutils.error.logging_config`.
     - Added :func:`igbpyutils.file.open_out`.
+    - :func:`~igbpyutils.dev.check_script_vs_lib` allows more shebangs by default.
 
 v0.6.0 - Mon Jun 17 2024
     - Added :func:`~igbpyutils.file.simple_cache`.

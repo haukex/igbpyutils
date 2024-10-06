@@ -24,7 +24,7 @@ Making a Release
 - `git tag vX.X.X`
 - `git push --tags`
 - (The following steps should be done on Linux)
-- `python3 -m build`
+- `python -m build`
 - Optional: inspect the package with `tar tzvf dist/igbpyutils-*.tar.gz`
 - Run `dev/isolated_test.sh dist/igbpyutils-*.tar.gz`
 - `twine upload dist/igbpyutils-*.tar.gz`

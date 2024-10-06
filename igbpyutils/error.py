@@ -1,4 +1,3 @@
-#!python3
 """Error Handling and Formatting Utilities
 
 Overview

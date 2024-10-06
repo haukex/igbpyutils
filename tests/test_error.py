@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """Tests for ``igbpyutils.error``.
 
 Author, Copyright, and License

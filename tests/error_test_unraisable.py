@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 # WARNING: Line numbers in this file are hard-coded in test_error.py!
 

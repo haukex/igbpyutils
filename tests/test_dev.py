@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """Tests for ``igbpyutils.dev``.
 
 Author, Copyright, and License
@@ -35,7 +35,7 @@ from igbpyutils.file import NamedTempFileDeleteLater, Pushd
 from igbpyutils.dev import ScriptLibFlags, ScriptLibResult, ResultLevel, check_script_vs_lib, check_script_vs_lib_cli, \
     generate_coveragerc, generate_coveragerc_cli
 
-def write_test_file(name, bfh, flags :ScriptLibFlags, *, shebang :str = "#!/usr/bin/env python3"):
+def write_test_file(name, bfh, flags :ScriptLibFlags, *, shebang :str = "#!/usr/bin/env python"):
     with TextIOWrapper(bfh, encoding='UTF-8') as fh:
         if flags&ScriptLibFlags.SHEBANG:
             fh.write(shebang+"\n")
@@ -196,11 +196,11 @@ class TestDevUtils(unittest.TestCase):
                 path = Path(ntf.name)
                 write_test_file(path, ntf, case.flags)
                 self.assertEqual( check_script_vs_lib(path), case._replace(path=path) )
-        case1 = ScriptLibResult(Path(), ResultLevel.WARNING, "File has unrecognized shebang '#!/usr/bin/python'",
+        case1 = ScriptLibResult(Path(), ResultLevel.WARNING, "File has unrecognized shebang '#!/bin/python'",
                                 ScriptLibFlags.SHEBANG)
         with NamedTempFileDeleteLater(suffix='.py') as ntf:
             path = Path(ntf.name)
-            write_test_file(path, ntf, case1.flags, shebang='#!/usr/bin/python')
+            write_test_file(path, ntf, case1.flags, shebang='#!/bin/python')
             self.assertEqual( check_script_vs_lib(path), case1._replace(path=path) )
 
     def test_script_vs_lib_git(self):

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """Tests for some iterator patterns.
 
 This test does not actually test any functions in this package,

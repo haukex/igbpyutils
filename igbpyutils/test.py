@@ -1,4 +1,3 @@
-#!python3
 """Utilities for Testing
 
 Note the utility previously named "``MyNamedTempFile``"

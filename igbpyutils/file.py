@@ -1,4 +1,3 @@
-#!python3
 """File-Related Utility Functions
 
 Author, Copyright, and License
@@ -95,7 +94,7 @@ def autoglob(files :Iterable[str], *, force :bool=False) -> Generator[str, None,
     ... args = parser.parse_args()
     ... paths = autoglob(args.files)
 
-    On a normal \\*NIX shell, calling this script as ``python3 script.py ~/*.py`` would result in
+    On a normal \\*NIX shell, calling this script as ``python script.py ~/*.py`` would result in
     ``args.files`` being a list of ``"/home/username/filename.py"`` strings if such files exist, or
     otherwise a single element of ``"/home/username/*.py"``. However, in a Windows ``cmd.exe`` shell,
     the aforementioned command always results in ``args.files`` being ``['~/*.py']``. This function
