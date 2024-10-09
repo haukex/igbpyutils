@@ -22,8 +22,8 @@ along with this program. If not, see https://www.gnu.org/licenses/
 """
 import unittest
 import warnings
-from igbpyutils.iter import no_duplicates, SizedCallbackIterator, is_unique_everseen, zip_strict
 from more_itertools import classify_unique
+from igbpyutils.iter import no_duplicates, SizedCallbackIterator, is_unique_everseen, zip_strict
 
 class TestIterTools(unittest.TestCase):
 
@@ -40,11 +40,10 @@ class TestIterTools(unittest.TestCase):
 
     def test_sized_cb_iterator(self):
         def gen(x):
-            for i in range(x): yield i
+            yield from range(x)
         g = gen(10)
         with self.assertRaises(TypeError):
-            # noinspection PyTypeChecker
-            self.assertNotEqual(len(g), 10)
+            self.assertNotEqual(len(g), 10)  # pyright: ignore [reportArgumentType]
         cbvals = []
         it = SizedCallbackIterator(g, 10, callback=lambda *a: cbvals.append(a))
         self.assertEqual(len(it), 10)
@@ -63,7 +62,8 @@ class TestIterTools(unittest.TestCase):
             list(SizedCallbackIterator(gen(10), 9, strict=True))
         # another callback test
         def gen2(x):
-            for i in range(x): yield chr(ord('a') + i) * (i+1)
+            for i in range(x):
+                yield chr(ord('a') + i) * (i+1)
         cbvals.clear()
         it2 = SizedCallbackIterator(gen2(6), 6, callback=lambda *a: cbvals.append(a))
         self.assertEqual(len(it2), 6)
@@ -108,12 +108,13 @@ class TestIterTools(unittest.TestCase):
         # documented alternative to no_duplicates if one doesn't need the return values:
         #self.assertFalse( not all(is_unique_everseen((1,2,3))) )
         #self.assertTrue( not all(is_unique_everseen((1,2,3,1))) )
-        self.assertFalse( not all( ever for e,just,ever in classify_unique((1,2,3)  ) ) )
+        self.assertFalse( not all( ever for _e,_just,ever in classify_unique((1,2,3)  ) ) )
         # the "[]" in the following is required to avoid coverage complaining "didn't finish the generator expression"
         # perhaps related:
         # https://github.com/nedbat/coveragepy/issues/475
         # https://github.com/nedbat/coveragepy/issues/1333
-        self.assertTrue(  not all( [ ever for e,just,ever in classify_unique((1,2,3,1)) ] ) )
+        lst = [ ever for _e,_just,ever in classify_unique((1,2,3,1)) ]
+        self.assertTrue( not all( lst ) )
 
 if __name__ == '__main__':  # pragma: no cover
     unittest.main()

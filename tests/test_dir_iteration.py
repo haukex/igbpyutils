@@ -45,13 +45,17 @@ class FileType(Enum):  # NOTE the names must match those in unzipwalk.FileType!
     OTHER = 3
 
 def path_to_type(p :Path):
-    if p.is_symlink(): return FileType.SYMLINK
-    elif p.is_dir(): return FileType.DIR
-    elif p.is_file(): return FileType.FILE
-    else: return FileType.OTHER
+    if p.is_symlink():  # cover-not-win32
+        return FileType.SYMLINK
+    if p.is_dir():
+        return FileType.DIR
+    if p.is_file():
+        return FileType.FILE
+    return FileType.OTHER  # cover-not-win32
 
 # b/c `lambda e: raise e` is not valid syntax
-def _raise(e): raise e  # pragma: no cover
+def _raise(e):  # pragma: no cover
+    raise e
 
 class TestDirIteration(unittest.TestCase):
 
@@ -61,14 +65,18 @@ class TestDirIteration(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.tempd_obj = TemporaryDirectory()
+        cls.tempd_obj = TemporaryDirectory()  # pylint: disable=consider-using-with
         cls.td = Path(cls.tempd_obj.name)
         (cls.td/'foo').mkdir()
-        with (cls.td/'bar.txt').open('w', encoding='ASCII') as fh: fh.write("Hello\n")
-        with (cls.td/'.quz.txt').open('w', encoding='ASCII') as fh: fh.write("World\n")
-        with (cls.td/'foo'/'baz.txt').open('w', encoding='ASCII') as fh: fh.write("CoOl\n")
+        with (cls.td/'bar.txt').open('w', encoding='ASCII') as fh:
+            fh.write("Hello\n")
+        with (cls.td/'.quz.txt').open('w', encoding='ASCII') as fh:
+            fh.write("World\n")
+        with (cls.td/'foo'/'baz.txt').open('w', encoding='ASCII') as fh:
+            fh.write("CoOl\n")
         (cls.td/'one'/'two'/'three').mkdir(parents=True)
-        with (cls.td/'one'/'two'/'three'/'four.txt').open('w', encoding='ASCII') as fh: fh.write("Hi there\n")
+        with (cls.td/'one'/'two'/'three'/'four.txt').open('w', encoding='ASCII') as fh:
+            fh.write("Hi there\n")
         cls.expect = [
             ( str(cls.td/'foo'), FileType.DIR ),
             ( str(cls.td/'bar.txt'), FileType.FILE ),
@@ -79,17 +87,17 @@ class TestDirIteration(unittest.TestCase):
             ( str(cls.td/'one'/'two'/'three'), FileType.DIR ),
             ( str(cls.td/'one'/'two'/'three'/'four.txt'), FileType.FILE )
         ]
-        # NOTE I'm not sure why the following doesn't report coverage on Python 3.9
-        if not sys.platform.startswith('win32'):  # cover-req-ge3.10
+        if not sys.platform.startswith('win32'):  # cover-not-win32
             (cls.td/'foo'/'quz.txt').symlink_to('../.quz.txt')
             (cls.td/'one'/'two'/'three'/'foo').symlink_to('../../../foo')
-            os.mkfifo(cls.td/'foo'/'xy.fifo')
+            os.mkfifo(cls.td/'foo'/'xy.fifo')  # pylint: disable=no-member  # pyright: ignore [reportAttributeAccessIssue]
             cls.expect.extend([
                 ( str(cls.td/'foo'/'quz.txt'), FileType.SYMLINK ),
                 ( str(cls.td/'one'/'two'/'three'/'foo'), FileType.SYMLINK ),
                 ( str(cls.td/'foo'/'xy.fifo'), FileType.OTHER ),
             ])
-        else: pass  # pragma: no cover
+        else:  # cover-only-win32
+            pass
         cls.expect.sort()
 
     @classmethod
@@ -97,7 +105,7 @@ class TestDirIteration(unittest.TestCase):
         cls.tempd_obj.cleanup()
 
     def setUp(self):
-        self.maxDiff = None
+        self.maxDiff = None  # pylint: disable=invalid-name
 
     def test_path_rglob(self):
         """Using ``Path.rglob('*')`` is easiest IMHO."""
@@ -108,9 +116,7 @@ class TestDirIteration(unittest.TestCase):
 
     def test_unzipwalk(self):  # pragma: no cover
         """Comparing to our ``unzipwalk`` module (if available) - but this also steps into archives!"""
-        # noinspection PyBroadException
         try:
-            # I expect unzipwalk to be able to load on Python 3.10+ (if installed)
             unzipwalk = importlib.import_module('unzipwalk')
         except Exception:
             self.skipTest("unzipwalk could not be loaded")
@@ -118,14 +124,13 @@ class TestDirIteration(unittest.TestCase):
             # remap from our FileType to unzipwalk.FileType (by enum name)
             expect = [ (pth, unzipwalk.FileType[typ.name]) for pth,typ in self.expect ]
             self.assertEqual(expect,
-                 sorted( (str(only(r.names)), r.typ) for r in unzipwalk.unzipwalk(self.td) ) )
+                    sorted( (str(only(r.names)), r.typ) for r in unzipwalk.unzipwalk(self.td) ) )
 
     @unittest.skipIf(sys.hexversion<0x030C00B0, "requires Python 3.12+")
-    def test_path_walk(self):  # pragma: no cover
+    def test_path_walk(self):  # cover-req-ge3.12
         """Using the new Path.walk() is very similar to os.walk()."""
         def path_walker(path):
-            # noinspection PyUnresolvedReferences
-            for root, dirs, files in Path(path).walk(on_error=_raise):
+            for root, dirs, files in Path(path).walk(on_error=_raise):  # type: ignore[attr-defined, unused-ignore]  # pylint: disable=no-member
                 for p in ( root/name for name in chain(dirs, files) ):
                     yield p, path_to_type(p)
         self.assertEqual(self.expect,
@@ -159,14 +164,16 @@ class TestDirIteration(unittest.TestCase):
             queue = deque( (path,) )
             while len(queue):
                 with os.scandir(queue.popleft()) as dh:
-                    # noinspection PyTypeChecker
                     for f in dh:
-                        if f.is_symlink(): yield f.path, FileType.SYMLINK
+                        if f.is_symlink():  # cover-not-win32
+                            yield f.path, FileType.SYMLINK
                         elif f.is_dir():
                             queue.append(f)
                             yield f.path,FileType.DIR
-                        elif f.is_file(): yield f.path, FileType.FILE
-                        else: yield f.path, FileType.OTHER
+                        elif f.is_file():
+                            yield f.path, FileType.FILE
+                        else:  # cover-not-win32
+                            yield f.path, FileType.OTHER
         self.assertEqual(self.expect,
             sorted( (p, t) for p,t in os_scandirer(self.td) ) )
 
@@ -184,9 +191,9 @@ class TestDirIteration(unittest.TestCase):
                         queue.append(p)
                     elif stat.S_ISREG(mode):
                         yield p, FileType.FILE
-                    elif stat.S_ISLNK(mode):
+                    elif stat.S_ISLNK(mode):  # cover-not-win32
                         yield p, FileType.SYMLINK
-                    else:
+                    else:  # cover-not-win32
                         yield p, FileType.OTHER
         self.assertEqual(self.expect,
             sorted( (p, t) for p,t in os_listdirer(self.td) ) )

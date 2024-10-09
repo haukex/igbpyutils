@@ -2,7 +2,7 @@
 
 # WARNING: Line numbers in this file are hard-coded in test_error.py!
 
-class TestError(RuntimeError): pass
+class TestError(RuntimeError): pass  # noqa: E701
 
 def testfunc0():
     testfunc1()

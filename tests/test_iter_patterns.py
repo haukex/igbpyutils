@@ -27,7 +27,9 @@ along with this program. If not, see https://www.gnu.org/licenses/
 """
 import unittest
 from typing import Any
+from itertools import tee, product
 from collections.abc import Generator, Iterable
+from more_itertools import unzip, gray_product
 from igbpyutils.iter import zip_strict
 
 class TestIterPatterns(unittest.TestCase):
@@ -38,7 +40,6 @@ class TestIterPatterns(unittest.TestCase):
 
         It is documented that ``unzip`` uses ``tee`` internally, and this should
         hopefully confirm that its internal storage doesn't grow too large."""
-        from more_itertools import unzip
         totest = []
         def gen() -> Generator[tuple[str, str, str], None, None]:
             tbl = (
@@ -71,7 +72,6 @@ class TestIterPatterns(unittest.TestCase):
         :func:`zip` reads the entire iterable and produces tuples, while :func:`more_itertools.unzip`
         produces iterators using :func:`itertools.tee` - but note that since this also buffers items,
         it can also use significant memory."""
-        from more_itertools import unzip
         totest = []
         def gen() -> Generator[tuple[str, str, str], None, None]:
             tbl = (
@@ -82,25 +82,24 @@ class TestIterPatterns(unittest.TestCase):
             for row in tbl:
                 totest.append(f"gen {row!r}")
                 yield row
-        for t in zip_strict(*gen()):
-            self.assertIsInstance(t, tuple)
-            totest.append(f"got {t!r}")
+        for t1 in zip_strict(*gen()):
+            self.assertIsInstance(t1, tuple)
+            totest.append(f"got {t1!r}")
         expect = [
             "gen ('One', 'Abc', 'Foo')", "gen ('Two', 'Def', 'Bar')", "gen ('Thr', 'Ghi', 'Quz')",
             "got ('One', 'Two', 'Thr')", "got ('Abc', 'Def', 'Ghi')", "got ('Foo', 'Bar', 'Quz')",
         ]
         self.assertEqual(totest, expect)
         totest = []
-        for t in unzip(gen()):
-            self.assertIsInstance(t, map)
-            totest.append(f"got {tuple(t)!r}")
+        for t2 in unzip(gen()):
+            self.assertIsInstance(t2, map)
+            totest.append(f"got {tuple(t2)!r}")
         self.assertEqual(totest, expect)
 
     def test_tee_zip(self):
         """Make sure that the ``tee``-then-``zip`` pattern works as expected,
         that is, that it really does consume the input one-at-a-time.
         **However**, see the "better variant" in the code below!!"""
-        from itertools import tee
         totest = []
         def gen() -> Generator[int, None, None]:
             for x in range(1,4):
@@ -124,7 +123,6 @@ class TestIterPatterns(unittest.TestCase):
         # The better variant by Stefan Pochmann at https://stackoverflow.com/a/76271631
         # (the only minor downside being that PyChram detects "i" as "referenced before assignment")
         for o in trans( (i := x)+4 for x in gen() ):
-            # noinspection PyUnboundLocalVariable
             totest.append(f"got {i}-{o}")
         self.assertEqual( totest, [
             'gen 1', 'trans 5-E', 'got 1-E',
@@ -133,8 +131,6 @@ class TestIterPatterns(unittest.TestCase):
 
     def test_gray_product(self):
         # gray_product has been merged into more_itertools, but we'll keep this test here for now anyway
-        from itertools import product
-        from more_itertools import gray_product
         self.assertEqual( tuple( gray_product( ('a','b','c'), range(1,3) ) ),
                           ( ("a",1), ("b",1), ("c",1), ("c",2), ("b",2), ("a",2) ) )
 
@@ -147,8 +143,10 @@ class TestIterPatterns(unittest.TestCase):
 
         self.assertEqual( tuple( gray_product() ), ((), ) )
         self.assertEqual( tuple( gray_product( (1,2) ) ), ( (1,), (2,) ) )
-        with self.assertRaises(ValueError): list( gray_product( (1,2), () ) )
-        with self.assertRaises(ValueError): list( gray_product( (1,2), (2,) ) )
+        with self.assertRaises(ValueError):
+            list( gray_product( (1,2), () ) )
+        with self.assertRaises(ValueError):
+            list( gray_product( (1,2), (2,) ) )
 
         iters = ( ("a","b"), range(3,6), [None, None], {"i","j","k","l"}, "XYZ" )
         self.assertEqual( sorted( product(*iters) ), sorted( gray_product(*iters) ) )

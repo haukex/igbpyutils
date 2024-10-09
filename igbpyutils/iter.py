@@ -25,28 +25,29 @@ along with this program. If not, see https://www.gnu.org/licenses/
 """
 import sys
 import warnings
-from collections.abc import Sized, Iterator, Iterable, Callable, Generator
-from typing import TypeVar, Generic, Optional, Any, overload
+from functools import partial
 from itertools import zip_longest
+from typing import TypeVar, Generic, Optional, Any, overload
+from collections.abc import Sized, Iterator, Iterable, Callable, Generator
 from more_itertools import classify_unique
 
 _marker = object()
-_T0 = TypeVar('_T0')
-_T1 = TypeVar('_T1')
-_T2 = TypeVar('_T2')
+_T0 = TypeVar('_T0')  # pylint: disable=invalid-name
+_T1 = TypeVar('_T1')  # pylint: disable=invalid-name
+_T2 = TypeVar('_T2')  # pylint: disable=invalid-name
 @overload
-def zip_strict(__iter1: Iterable[_T1]) -> Iterator[tuple[_T1]]: ...  # pragma: no cover
+def zip_strict(__iter1: Iterable[_T1]) -> Generator[tuple[_T1], None, None]: ...  # pragma: no cover
 @overload
 def zip_strict(
     __iter1: Iterable[_T1], __iter2: Iterable[_T2]
-) -> Iterator[tuple[_T1, _T2]]: ...  # pragma: no cover
+) -> Generator[tuple[_T1, _T2], None, None]: ...  # pragma: no cover
 @overload
 def zip_strict(
     __iter1: Iterable[_T0],
     __iter2: Iterable[_T0],
     __iter3: Iterable[_T0],
     *iterables: Iterable[_T0],
-) -> Iterator[tuple[_T0, ...]]: ...  # pragma: no cover
+) -> Generator[tuple[_T0, ...], None, None]: ...  # pragma: no cover
 def zip_strict(*iterables):  # cover-req-lt3.10
     """Like Python's ``zip``, but requires all iterables to return the same number of items.
 
@@ -55,12 +56,9 @@ def zip_strict(*iterables):  # cover-req-lt3.10
         if any( v is _marker for v in combo ):
             raise ValueError("Iterables have different lengths")
         yield combo
-if sys.hexversion>=0x030A00B0:  # cover-req-ge3.10
-    from functools import partial
-    zip_strict = partial(zip, strict=True)  # type: ignore
-else: pass  # cover-req-lt3.10
+zip_strict = partial(zip, strict=True) if sys.hexversion>=0x030A00B0 else zip_strict  # type: ignore[assignment]
 
-_T = TypeVar('_T', covariant=True)
+_T = TypeVar('_T', covariant=True)  # pylint: disable=typevar-name-incorrect-variance
 class SizedCallbackIterator(Generic[_T], Sized, Iterator[_T]):
     """Wrapper to add :func:`len` support and a callback to an iterator.
 
@@ -68,14 +66,17 @@ class SizedCallbackIterator(Generic[_T], Sized, Iterator[_T]):
     (e.g. if it returns exactly one item per input item), so that it can then
     be used in libraries like `tqdm <https://tqdm.github.io/>`_."""
     def __init__(self, it :Iterable[_T], length :int, *, strict :bool=False, callback :Optional[Callable[[int, _T], None]]=None):
-        if length<0: raise ValueError("length must be >= 0")
+        if length<0:
+            raise ValueError("length must be >= 0")
         self.it = iter(it)
         self.length = length
         self._count = 0
         self.strict = strict
         self.callback = callback
-    def __len__(self) -> int: return self.length
-    def __iter__(self) -> Iterator[_T]: return self
+    def __len__(self) -> int:
+        return self.length
+    def __iter__(self) -> Iterator[_T]:
+        return self
     def __next__(self) -> _T:
         try:
             val :_T = next(self.it)
@@ -83,13 +84,12 @@ class SizedCallbackIterator(Generic[_T], Sized, Iterator[_T]):
             if self.strict and self._count != self.length:
                 raise ValueError(f"expected iterator to return {self.length} items, but it returned {self._count}") from ex
             raise ex
-        else:
-            if self.callback:
-                self.callback(self._count, val)
-            self._count += 1
-            return val
+        if self.callback:
+            self.callback(self._count, val)
+        self._count += 1
+        return val
 
-_V = TypeVar('_V', covariant=True)
+_V = TypeVar('_V', covariant=True)  # pylint: disable=typevar-name-incorrect-variance
 def is_unique_everseen(iterable :Iterable[_V], *, key :Optional[Callable[[_V], Any]] = None) -> Generator[bool, None, None]:
     """For each element in the input iterable, return either :obj:`True` if this
     element is unique, or :obj:`False` if it is not.
@@ -118,8 +118,6 @@ def is_unique_everseen(iterable :Iterable[_V], *, key :Optional[Callable[[_V], A
             else:
                 yield False
 
-# this is for "element", probably because PyCharm doesn't detect element:=x
-# noinspection PyUnboundLocalVariable
 def no_duplicates(iterable :Iterable[_V], *, key :Optional[Callable[[_V], Any]] = None, name :str="item") -> Generator[_V, None, None]:
     """Raise a :exc:`ValueError` if there are any duplicate elements in the
     input iterable.
@@ -137,6 +135,7 @@ def no_duplicates(iterable :Iterable[_V], *, key :Optional[Callable[[_V], Any]] 
     The implementation is very similar :func:`more_itertools.unique_everseen`
     and is subject to the same performance considerations.
     """
-    for element, uniq_just, uniq_ever in classify_unique(iterable, key=key):
-        if not uniq_ever: raise ValueError(f"duplicate {name}: {element!r}")
-        else: yield element
+    for element, _uniq_just, uniq_ever in classify_unique(iterable, key=key):
+        if not uniq_ever:
+            raise ValueError(f"duplicate {name}: {element!r}")
+        yield element

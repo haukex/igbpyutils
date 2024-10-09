@@ -38,13 +38,12 @@ import inspect
 import logging
 import warnings
 import threading
+from pathlib import Path
+from logging import Formatter
+from traceback import extract_tb
 from collections.abc import Generator
 from typing import Any, Optional, Literal, Union, Protocol, runtime_checkable
-from logging import Formatter
-from pathlib import Path
-# noinspection PyPackageRequirements
 import __main__  # just to get __main__.__file__ below
-from traceback import extract_tb
 from igbpyutils.file import Filename
 
 def running_in_unittest() -> bool:
@@ -62,41 +61,50 @@ _basepath = Path(__main__.__file__).parent.resolve(strict=True) \
 
 def extype_fullname(ex: type) -> str:
     """Return the name of an exception together with its module name, if any."""
-    if ex.__module__ in ('builtins','__main__'): return ex.__name__
-    else: return ex.__module__ + "." + ex.__name__
+    if ex.__module__ in ('builtins','__main__'):
+        return ex.__name__
+    #else:
+    return ex.__module__ + "." + ex.__name__
 
 def ex_repr(ex: BaseException) -> str:
     """Return a representation of the exception including its full name and ``.args``."""
     return extype_fullname(type(ex)) + '(' + ', '.join(map(repr, ex.args)) + ')'
 
 # Equivalent to Lib/warnings.py, but customize UserWarning messages to be shorter.
-def _showwarning(message, category, filename, lineno, file=None, line=None):
+def _showwarning(message, category, filename, lineno, file=None, line=None):  # pylint: disable=too-many-positional-arguments
     if file is None:  # pragma: no cover
         file = sys.stderr
-        if file is None: return
+        if file is None:
+            return
     if issubclass(category, UserWarning):
         try:
             fn = Path(filename).resolve(strict=True)
         except OSError:  # pragma: no cover
             fn = Path(filename)
-        if fn.is_relative_to(_basepath): fn = fn.relative_to(_basepath)
+        if fn.is_relative_to(_basepath):  # pragma: no branch
+            fn = fn.relative_to(_basepath)
         text = f"{extype_fullname(category)}: {message} at {fn}:{lineno}\n"
     else:
         text = warnings.formatwarning(message, category, filename, lineno, line)
-    try: file.write(text)
-    except OSError: pass  # pragma: no cover
+    try:
+        file.write(text)
+    except OSError:  # pragma: no cover
+        pass
 
 def _excepthook(_type, value, _traceback):  # pragma: no cover
-    for s in javaishstacktrace(value): print(s)
+    for s in javaishstacktrace(value):
+        print(s)
 
 def _unraisablehook(unraisable):  # pragma: no cover
     err_msg = unraisable.err_msg if unraisable.err_msg else "Exception ignored in"
     print(f'{err_msg}: {unraisable.object!r}')
-    for s in javaishstacktrace(unraisable.exc_value): print(s)
+    for s in javaishstacktrace(unraisable.exc_value):
+        print(s)
 
 def _threading_excepthook(args):  # pragma: no cover
     print(f"In thread {args.thread.name if args.thread else '<unknown>'}:", file=sys.stderr)
-    for s in javaishstacktrace(args.exc_value): print(s, file=sys.stderr)
+    for s in javaishstacktrace(args.exc_value):
+        print(s, file=sys.stderr)
 
 def asyncio_exception_handler(loop, ctx :dict[str, Any]):  # pragma: no cover
     """A custom version of :mod:`asyncio`'s ``loop.set_exception_handler()``."""
@@ -105,7 +113,8 @@ def asyncio_exception_handler(loop, ctx :dict[str, Any]):  # pragma: no cover
         if key not in ('message','exception'):
             print(f"\t{key}: {val!r}", file=sys.stderr)
     if 'exception' in ctx:
-        for s in javaishstacktrace(ctx['exception']): print(s, file=sys.stderr)
+        for s in javaishstacktrace(ctx['exception']):
+            print(s, file=sys.stderr)
 
 class CustomHandlers:
     """A context manager that installs and removes this module's custom error and warning handlers.
@@ -116,27 +125,33 @@ class CustomHandlers:
     be done manually later if there is no running loop at the moment."""
     #TODO: Consider providing a way to customize unittest errors: https://github.com/python/cpython/blob/01481f2d/Lib/unittest/result.py#L187
     def __enter__(self):
-        self.showwarning_orig = warnings.showwarning
+        self.showwarning_orig = warnings.showwarning  # pylint: disable=attribute-defined-outside-init
         warnings.showwarning = _showwarning
         sys.excepthook = _excepthook
         sys.unraisablehook = _unraisablehook
-        self.prev_threading_excepthook = threading.excepthook  # threading.__excepthook__ was not added until 3.10
+        # threading.__excepthook__ was not added until 3.10
+        self.prev_threading_excepthook = threading.excepthook    # pylint: disable=attribute-defined-outside-init
         threading.excepthook = _threading_excepthook
-        try: self.loop = asyncio.get_running_loop()
-        except RuntimeError: self.loop = None
-        else: self.loop.set_exception_handler(asyncio_exception_handler)  # pragma: no cover
+        self.loop :Optional[asyncio.AbstractEventLoop]  # pylint: disable=attribute-defined-outside-init
+        try:
+            self.loop = asyncio.get_running_loop()  # pylint: disable=attribute-defined-outside-init
+        except RuntimeError:
+            self.loop = None  # pylint: disable=attribute-defined-outside-init
+        else:
+            self.loop.set_exception_handler(asyncio_exception_handler)  # pragma: no cover
         return self
     def __exit__(self, exc_type, exc_val, exc_tb):
         warnings.showwarning = self.showwarning_orig
         sys.excepthook = sys.__excepthook__
         sys.unraisablehook = sys.__unraisablehook__
         threading.excepthook = self.prev_threading_excepthook
-        if self.loop: self.loop.set_exception_handler(None)
+        if self.loop:  # pragma: no cover
+            self.loop.set_exception_handler(None)
         return False  # raise exception if any
 
 def init_handlers() -> None:
     """Set up the :class:`CustomHandlers` once and don't change them back."""
-    CustomHandlers().__enter__()
+    CustomHandlers().__enter__()  # pylint: disable=unnecessary-dunder-call
 
 def javaishstacktrace(ex :BaseException) -> Generator[str, None, None]:
     """Generate a stack trace in the style of Java.
@@ -158,15 +173,18 @@ def javaishstacktrace(ex :BaseException) -> Generator[str, None, None]:
                 lines = inspect.getinnerframes(e.__traceback__)[-1].code_context
                 if lines:
                     r += f" [{ lines[0].strip() if len(lines)==1 else ''.join(lines) !r}]"
-                else: pass  # pragma: no cover
-            else: pass  # cover-req-lt3.10
+                else:  # pragma: no cover
+                    pass
+            else:  # cover-req-lt3.10
+                pass
         yield r if first else "which caused: " + r
         for item in reversed( extract_tb(e.__traceback__) ):
             try:
                 fn = Path(item.filename).resolve(strict=True)
             except OSError:  # pragma: no cover
                 fn = Path(item.filename)
-            if fn.is_relative_to(_basepath): fn = fn.relative_to(_basepath)
+            if fn.is_relative_to(_basepath):  # pragma: no branch
+                fn = fn.relative_to(_basepath)
             yield f"\tat {fn}:{item.lineno} in {item.name}"
         first = False
 
@@ -211,9 +229,11 @@ def logging_config(*,
     for hnd in root.handlers[:]:  # attribute is not documented, but this is what logging.basicConfig does
         root.removeHandler(hnd)
         hnd.close()
-    if stream is None and filename is None or stream is True: stream = sys.stderr
+    if stream is None and filename is None or stream is True:
+        stream = sys.stderr
     handlers :list[logging.Handler] = []
     if stream is not None:
+        assert isinstance(stream, LoggingStream)
         handlers.append(logging.StreamHandler(stream))
     if filename is not None:
         handlers.append(logging.FileHandler(filename, encoding='UTF-8', errors='namereplace'))

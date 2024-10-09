@@ -1,12 +1,13 @@
+# pylint: disable=invalid-name
 # Configuration file for the Sphinx documentation builder.
-from pathlib import Path
 import sys
-import tomllib
+from pathlib import Path
+from importlib import import_module
+import tomli
 sys.path.insert(0, str(Path(__file__).parent.parent.resolve(strict=True)))
 
 # ### Munging Code ###
 def generate():
-    from importlib import import_module
     """This generates a ``.rst`` file for each module. Apparently, autodoc will put the
     module's docstring, which includes the title, at the same indentation level as the
     members. To work around that, here we take the module's docstring and munge it
@@ -16,6 +17,7 @@ def generate():
         if file.suffix == '.py' and not file.name=='__init__.py':
             rf = Path(__file__).parent/(file.stem + '.rst')
             doc = import_module('igbpyutils.'+file.stem).__doc__
+            assert doc
             (before, copy1, copy) = doc.partition('Author, Copyright, and License')
             (title, _, desc) = before.partition("\n\n")
             before = title + "\n" + ("="*len(title)) + "\n\n" + desc
@@ -24,8 +26,9 @@ def generate():
             with rf.open('w') as fh:
                 print(before + auto + after, file=fh)
 generate()  # in a function so we don't pollute the global namespace
-def process_docstring(app, what, name, obj, options, lines :list[str]):
-    if what=='module': lines.clear()
+def process_docstring(app, what, name, obj, options, lines :list[str]):  # pylint: disable=too-many-positional-arguments,unused-argument  # noqa: E501
+    if what=='module':
+        lines.clear()
     return True
 def setup(app):
     app.connect('autodoc-process-docstring', process_docstring)
@@ -33,9 +36,11 @@ def setup(app):
 # ### Configuration ###
 project = 'igbpyutils'
 author = 'Hauke D'
-copyright = '2023 Hauke Daempfling at the IGB'
-with (Path(__file__).parent.parent/'pyproject.toml').open('rb') as fh:
-    version = tomllib.load(fh)['project']['version']
+copyright = '2023 Hauke Daempfling at the IGB'  # pylint: disable=redefined-builtin
+def _getver():
+    with (Path(__file__).parent.parent/'pyproject.toml').open('rb') as fh:
+        return tomli.load(fh)['project']['version']
+version = _getver()
 
 exclude_patterns = ['.venv*/**']
 

@@ -25,6 +25,7 @@ import sys
 import ast
 import enum
 import argparse
+import warnings
 import subprocess
 from stat import S_IXUSR
 from pathlib import Path
@@ -82,7 +83,8 @@ DEFAULT_SHEBANGS = (
     '#!/usr/local/bin/python',
 )
 
-def check_script_vs_lib(path :Filename, *, known_shebangs :Sequence[str] = DEFAULT_SHEBANGS, exec_from_git :bool = False) -> ScriptLibResult:
+def check_script_vs_lib(path :Filename,  # pylint: disable=too-many-return-statements
+                        *, known_shebangs :Sequence[str] = DEFAULT_SHEBANGS, exec_from_git :bool = False) -> ScriptLibResult:
     """This function analyzes a Python file to see whether it looks like a library or a script,
     and checks several features of the file for consistency.
 
@@ -103,7 +105,7 @@ def check_script_vs_lib(path :Filename, *, known_shebangs :Sequence[str] = DEFAU
     pth = Path(path)
     flags = ScriptLibFlags(0)
     with pth.open(encoding='UTF-8') as fh:
-        if not _IS_WINDOWS and os.stat(fh.fileno()).st_mode & S_IXUSR:
+        if not _IS_WINDOWS and os.stat(fh.fileno()).st_mode & S_IXUSR:  # cover-not-win32
             flags |= ScriptLibFlags.EXEC_BIT
         source = fh.read()
     ignore_exec_bit = _IS_WINDOWS
@@ -138,32 +140,32 @@ def check_script_vs_lib(path :Filename, *, known_shebangs :Sequence[str] = DEFAU
               # docstring:
               and not (isinstance(node, ast.Expr) and isinstance(node.value, ast.Constant) and isinstance(node.value.value, str))):
             why_scriptlike.append(f"{type(node).__name__}@L{node.lineno}")  # type: ignore[attr-defined]
-    if why_scriptlike: flags |= ScriptLibFlags.SCRIPT_LIKE
+    if why_scriptlike:
+        flags |= ScriptLibFlags.SCRIPT_LIKE
     if flags&ScriptLibFlags.SHEBANG and shebang_line not in known_shebangs:
         return ScriptLibResult(pth, ResultLevel.WARNING, f"File has unrecognized shebang {shebang_line!r}", flags)
     if flags&ScriptLibFlags.NAME_MAIN and flags&ScriptLibFlags.SCRIPT_LIKE:
-        return ScriptLibResult(pth, ResultLevel.ERROR, f"File has `if __name__=='__main__'` and looks like a script due to {', '.join(why_scriptlike)}", flags)
-    elif not flags&ScriptLibFlags.SHEBANG and not flags&ScriptLibFlags.NAME_MAIN and not flags&ScriptLibFlags.SCRIPT_LIKE:
+        return ScriptLibResult(pth, ResultLevel.ERROR, "File has `if __name__=='__main__'` and looks like a script due to "
+                               f"{', '.join(why_scriptlike)}", flags)
+    if not flags&ScriptLibFlags.SHEBANG and not flags&ScriptLibFlags.NAME_MAIN and not flags&ScriptLibFlags.SCRIPT_LIKE:
         # looks like a normal library
         if flags&ScriptLibFlags.EXEC_BIT:
-            return ScriptLibResult(pth, ResultLevel.ERROR, f"File looks like a library but exec bit is set", flags)
-        else:
-            return ScriptLibResult(pth, ResultLevel.INFO, f"File looks like a normal library", flags)
-    elif not flags&ScriptLibFlags.NAME_MAIN and not flags&ScriptLibFlags.SCRIPT_LIKE:
+            return ScriptLibResult(pth, ResultLevel.ERROR, "File looks like a library but exec bit is set", flags)
+        return ScriptLibResult(pth, ResultLevel.INFO, "File looks like a normal library", flags)
+    if not flags&ScriptLibFlags.NAME_MAIN and not flags&ScriptLibFlags.SCRIPT_LIKE:
         assert flags&ScriptLibFlags.SHEBANG
-        return ScriptLibResult(pth, ResultLevel.ERROR, f"File has shebang{' and exec bit' if flags&ScriptLibFlags.EXEC_BIT else ''} but seems to be missing anything script-like", flags)
-    else:
-        assert (flags&ScriptLibFlags.NAME_MAIN or flags&ScriptLibFlags.SCRIPT_LIKE) and not (flags&ScriptLibFlags.NAME_MAIN and flags&ScriptLibFlags.SCRIPT_LIKE)  # xor
-        if (flags & ScriptLibFlags.EXEC_BIT or ignore_exec_bit) and flags&ScriptLibFlags.SHEBANG:
-            if flags&ScriptLibFlags.SCRIPT_LIKE:
-                return ScriptLibResult(pth, ResultLevel.NOTICE, f"File looks like a normal script (but could use `if __name__=='__main__'`)", flags)
-            else:
-                return ScriptLibResult(pth, ResultLevel.INFO, f"File looks like a normal script", flags)
-        else:
-            missing = ([] if flags & ScriptLibFlags.EXEC_BIT or ignore_exec_bit else ['exec bit']) + ([] if flags & ScriptLibFlags.SHEBANG else ['shebang'])
-            assert missing
-            why :str = ', '.join(why_scriptlike) if flags&ScriptLibFlags.SCRIPT_LIKE else "`if __name__=='__main__'`"
-            return ScriptLibResult(pth, ResultLevel.ERROR, f"File looks like a script (due to {why}) but is missing {' and '.join(missing)}", flags)
+        return ScriptLibResult(pth, ResultLevel.ERROR, f"File has shebang{' and exec bit' if flags&ScriptLibFlags.EXEC_BIT else ''} "
+                               "but seems to be missing anything script-like", flags)
+    assert (flags&ScriptLibFlags.NAME_MAIN or flags&ScriptLibFlags.SCRIPT_LIKE
+            ) and not (flags&ScriptLibFlags.NAME_MAIN and flags&ScriptLibFlags.SCRIPT_LIKE)  # xor
+    if (flags & ScriptLibFlags.EXEC_BIT or ignore_exec_bit) and flags&ScriptLibFlags.SHEBANG:
+        if flags&ScriptLibFlags.SCRIPT_LIKE:
+            return ScriptLibResult(pth, ResultLevel.NOTICE, "File looks like a normal script (but could use `if __name__=='__main__'`)", flags)
+        return ScriptLibResult(pth, ResultLevel.INFO, "File looks like a normal script", flags)
+    missing = ([] if flags & ScriptLibFlags.EXEC_BIT or ignore_exec_bit else ['exec bit']) + ([] if flags & ScriptLibFlags.SHEBANG else ['shebang'])
+    assert missing
+    why :str = ', '.join(why_scriptlike) if flags&ScriptLibFlags.SCRIPT_LIKE else "`if __name__=='__main__'`"
+    return ScriptLibResult(pth, ResultLevel.ERROR, f"File looks like a script (due to {why}) but is missing {' and '.join(missing)}", flags)
 
 def check_script_vs_lib_cli() -> None:
     """Command-line interface for :func:`check_script_vs_lib`.
@@ -178,7 +180,8 @@ def check_script_vs_lib_cli() -> None:
     args = parser.parse_args()
     issues :int = 0
     for path in cmdline_rglob(autoglob(args.paths)):
-        if not path.is_file() or not path.suffix.lower()=='.py': continue
+        if not path.is_file() or not path.suffix.lower()=='.py':
+            continue
         result = check_script_vs_lib(path, exec_from_git=args.exec_git)
         if result.level>=ResultLevel.WARNING or args.verbose or args.notice and result.level>=ResultLevel.NOTICE:
             print(f"{result.level.name} {result.path}: {result.message}")
@@ -186,7 +189,8 @@ def check_script_vs_lib_cli() -> None:
             issues += 1
     parser.exit(issues)
 
-def generate_coveragerc(*, minver :int, maxver :int, forver :Optional[int]=None, outdir :Optional[Path]=None, verbose :bool=False):
+def generate_coveragerc(*,  # pragma: no cover
+                        minver :int, maxver :int, forver :Optional[int]=None, outdir :Optional[Path]=None, verbose :bool=False):
     """Generate ``.coveragerc3.X`` files for various Python 3 versions.
 
     These generated files provide tags such as ``cover-req-ge3.10`` and ``cover-req-lt3.10`` that can be used
@@ -202,45 +206,25 @@ def generate_coveragerc(*, minver :int, maxver :int, forver :Optional[int]=None,
     :param outdir: The path into which to output the files. Defaults to the current working directory.
     :param verbose: If true, ``print`` a message for each file written.
     """
-    #TODO: Investigate https://github.com/nedbat/coveragepy/issues/1699
-    # https://github.com/asottile/covdefaults - does a bit too much for me
-    # https://github.com/wemake-services/coverage-conditional-plugin
+    warnings.warn("Use coverage-simple-excludes instead", DeprecationWarning)
     versions = range(minver, maxver)
     if not versions:
-        raise ValueError(f"No versions in range")
+        raise ValueError("No versions in range")
     if forver is not None and forver not in versions:
-        raise ValueError(f"forver must be in the range minver to maxver")
-    if not outdir: outdir = Path()
+        raise ValueError("forver must be in the range minver to maxver")
+    if not outdir:
+        outdir = Path()
     for vc in versions if forver is None else (forver,):
         fn = outdir / f".coveragerc3.{vc}"
         with fn.open('x', encoding='ASCII', newline='\n') as fh:
             print(f"# Generated .coveragerc for Python 3.{vc}\n[report]\nexclude_also =", file=fh)
-            if not sys.platform.startswith('linux'): print("    cover-linux", file=fh)
-            if not sys.platform.startswith('win32'): print("    cover-win32", file=fh)
-            if not sys.platform.startswith('darwin'): print("    cover-darwin", file=fh)
+            if not sys.platform.startswith('linux'):
+                print("    cover-linux", file=fh)
+            if not sys.platform.startswith('win32'):
+                print("    cover-win32", file=fh)
+            if not sys.platform.startswith('darwin'):
+                print("    cover-darwin", file=fh)
             for v in versions[1:]:
-                print(f"    cover-req-" + re.escape(f"{'ge' if v>vc else 'lt'}3.{v}"), file=fh)
-        if verbose: print(f"Wrote {fn}")
-
-def _parsever(ver :str):
-    if re.fullmatch(r'''\A[0-9]+\Z''', ver):
-        return int(ver)
-    elif m := re.fullmatch(r'''\A3\.([0-9]+)\Z''', ver):
-        return int(m.group(1))
-    else:
-        raise ValueError(f"Failed to understand version number {ver!r}, must be \"3.X\" or minor version only")
-
-def generate_coveragerc_cli():
-    """Command-line interface for :func:`generate_coveragerc`.
-
-    If the module and script have been installed correctly, you should be able to run ``gen-coveragerc -h`` for help."""
-    parser = argparse.ArgumentParser(description='Generate .coveragerc3.X files')
-    parser.add_argument('-q','--quiet', help="Don't output informational messages",action="store_true")
-    parser.add_argument('-o','--outdir', help="Output directory")
-    parser.add_argument('-f','--forver', metavar='VERSION', help="only generate for this version")
-    parser.add_argument('minver', help="3.N minimum version (inclusive)")
-    parser.add_argument('maxver', help="3.M maximum version (exclusive)")
-    args = parser.parse_args()
-    generate_coveragerc(minver=_parsever(args.minver), maxver=_parsever(args.maxver), verbose=not args.quiet,
-        forver=_parsever(args.forver) if args.forver else None, outdir=Path(args.outdir) if args.outdir else None)
-    parser.exit(0)
+                print("    cover-req-" + re.escape(f"{'ge' if v>vc else 'lt'}3.{v}"), file=fh)
+        if verbose:
+            print(f"Wrote {fn}")

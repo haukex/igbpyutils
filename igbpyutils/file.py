@@ -20,19 +20,22 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see https://www.gnu.org/licenses/
 """
 import os
+import io
 import re
-import stat
 import sys
+import stat
 import uuid
 import typing
-import io
 import pickle
 import warnings
+import contextlib
+from glob import glob
 from pathlib import Path
-from typing import Union, TypeVar, Optional
 from gzip import GzipFile
-from functools import singledispatch
+from os.path import expanduser
 from contextlib import contextmanager
+from typing import Union, TypeVar, Optional
+from functools import singledispatch, partial
 from collections.abc import Generator, Iterable, Callable
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 from stat import S_IWUSR, S_IXUSR, S_IMODE, S_ISDIR, S_ISLNK
@@ -53,21 +56,23 @@ Can be converted to :class:`~pathlib.Path` objects with :func:`to_Paths`."""
 @singledispatch
 def _topath(item :Union[Filename,bytes]):
     raise TypeError(f"I don't know how to covert this to a Path: {item!r}")
-@_topath.register
-def _(item :bytes): return Path(os.fsdecode(item))
-@_topath.register
-def _(item :str): return Path(item)
-@_topath.register
-def _(item :os.PathLike): return Path(item)
-# noinspection PyPep8Naming
+@_topath.register  # pyright: ignore [reportCallIssue,reportArgumentType,reportUntypedFunctionDecorator]
+def _(item :bytes):
+    return Path(os.fsdecode(item))
+@_topath.register  # pyright: ignore [reportCallIssue,reportArgumentType,reportUntypedFunctionDecorator]
+def _(item :str):
+    return Path(item)
+@_topath.register  # pyright: ignore [reportCallIssue,reportArgumentType,reportUntypedFunctionDecorator]
+def _(item :os.PathLike):
+    return Path(item)
 @singledispatch
-def to_Paths(paths :AnyPaths) -> Generator[Path, None, None]:
+def to_Paths(paths :AnyPaths) -> Generator[Path, None, None]:  # pylint: disable=invalid-name
     """Convert various inputs to :class:`~pathlib.Path` objects."""
     # mypy says this: Argument 1 to "iter" has incompatible type
     # "Union[Union[str, PathLike[Any]], bytes, Iterable[Union[Union[str, PathLike[Any]], bytes]]]"; expected
     # "SupportsIter[Iterator[Union[int, str, PathLike[Any], bytes]]]"
     # => I'm not sure where the "int" is coming from, this seems like some kind of misdetection
-    yield from map(_topath, iter(paths))  # type: ignore
+    yield from map(_topath, iter(paths))  # type: ignore[arg-type]
 # I'd like to use Union[bytes, str, os.PathLike] to combine the following three, but apparently singledispatch doesn't support that
 @to_Paths.register
 def _(paths :bytes) -> Generator[Path, None, None]:
@@ -104,8 +109,6 @@ def autoglob(files :Iterable[str], *, force :bool=False) -> Generator[str, None,
         to detect the current shell. Uncommon values in these variables may cause misdetection; please feel
         free to submit patches if the detection does not work on your system.
     """
-    from glob import glob
-    from os.path import expanduser
     likely_nixshell = bool(_nixshell_re.search(os.environ.get('SHELL', '')))
     likely_winshell = bool(_winshell_re.search(os.environ.get('COMSPEC', '')))
     if likely_winshell and not likely_nixshell or force:
@@ -114,8 +117,10 @@ def autoglob(files :Iterable[str], *, force :bool=False) -> Generator[str, None,
             g = glob(f)  # note glob always returns a list
             # If a *NIX glob doesn't match anything, it isn't expanded,
             # while glob() returns an empty list, so we emulate *NIX.
-            if g: yield from g
-            else: yield f
+            if g:
+                yield from g
+            else:
+                yield f
     else:
         yield from files
 
@@ -140,44 +145,51 @@ def cmdline_rglob(paths :AnyPaths) -> Generator[Path, None, None]:
                 yield from pth.rglob('*')
         if not cnt:
             yield from Path().rglob('*')
-    for path, uniq_just, uniq_ever in classify_unique(path_gen(), key=lambda k: k.absolute()):
+    for path, _uniq_just, uniq_ever in classify_unique(path_gen(), key=lambda k: k.absolute()):
         if uniq_ever:
             yield path
 
-class Pushd:  # cover-req-lt3.11
+class _Pushd:  # cover-req-lt3.11
     """A context manager that temporarily changes the current working directory.
 
     On Python >=3.11, this is simply an alias for :func:`contextlib.chdir`."""
     def __init__(self, newdir :Filename):
         self.newdir = newdir
     def __enter__(self):
-        self.prevdir = os.getcwd()
+        self.prevdir = os.getcwd()  # pylint: disable=attribute-defined-outside-init
         os.chdir(self.newdir)
-        return
     def __exit__(self, exc_type, exc_val, exc_tb):
         os.chdir(self.prevdir)
         return False  # raise exception if any
-if sys.hexversion>=0x030B00B0:  # cover-req-ge3.11
-    import contextlib
-    Pushd = contextlib.chdir  # type: ignore
-else: pass  # cover-req-lt3.11
 
-def filetypestr(st :os.stat_result) -> str:
+Pushd = contextlib.chdir if sys.hexversion>=0x030B00B0 else _Pushd  # type: ignore[attr-defined, unused-ignore]
+
+def filetypestr(st :os.stat_result) -> str:  # pylint: disable=too-many-return-statements
     """Return a string naming the file type reported by :func:`os.stat`."""
-    if stat.S_ISDIR(st.st_mode): return "directory"
-    elif stat.S_ISCHR(st.st_mode): return "character special device file"  # pragma: no cover
-    elif stat.S_ISBLK(st.st_mode): return "block special device file"  # pragma: no cover
-    elif stat.S_ISREG(st.st_mode): return "regular file"
-    elif stat.S_ISFIFO(st.st_mode): return "FIFO (named pipe)"
-    elif stat.S_ISLNK(st.st_mode): return "symbolic link"
-    elif stat.S_ISSOCK(st.st_mode): return "socket"  # pragma: no cover
+    if stat.S_ISDIR(st.st_mode):
+        return "directory"
+    if stat.S_ISCHR(st.st_mode):  # pragma: no cover
+        return "character special device file"
+    if stat.S_ISBLK(st.st_mode):  # pragma: no cover
+        return "block special device file"
+    if stat.S_ISREG(st.st_mode):
+        return "regular file"
+    if stat.S_ISFIFO(st.st_mode):  # cover-not-win32
+        return "FIFO (named pipe)"
+    if stat.S_ISLNK(st.st_mode):  # cover-not-win32
+        return "symbolic link"
+    if stat.S_ISSOCK(st.st_mode):  # pragma: no cover
+        return "socket"
     # Solaris
-    elif stat.S_ISDOOR(st.st_mode): return "door"  # pragma: no cover
+    if stat.S_ISDOOR(st.st_mode):  # pragma: no cover
+        return "door"
     # Solaris?
-    elif stat.S_ISPORT(st.st_mode): return "event port"  # pragma: no cover
+    if stat.S_ISPORT(st.st_mode):  # pragma: no cover
+        return "event port"
     # union/overlay file systems
-    elif stat.S_ISWHT(st.st_mode): return "whiteout"  # pragma: no cover
-    else: raise ValueError(f"unknown filetype {st.st_mode:#o}")  # pragma: no cover
+    if stat.S_ISWHT(st.st_mode):  # pragma: no cover
+        return "whiteout"
+    raise ValueError(f"unknown filetype {st.st_mode:#o}")  # pragma: no cover
 
 invalidchars = frozenset( '<>:"/\\|?*' + bytes(range(32)).decode('ASCII') )
 invalidnames = frozenset(( 'CON', 'PRN', 'AUX', 'NUL',
@@ -226,11 +238,12 @@ def replacer(file :Filename, *, binary :bool=False, encoding=None, errors=None, 
     Multiple writers will need to be coordinated with external locking mechanisms.
     """
     fname = Path(file).resolve(strict=True)
-    if not fname.is_file(): raise ValueError(f"not a regular file: {fname}")
+    if not fname.is_file():
+        raise ValueError(f"not a regular file: {fname}")
     with fname.open(mode = 'rb' if binary else 'r', encoding=encoding, errors=errors, newline=newline) as infh:
         origmode = stat.S_IMODE( os.stat(infh.fileno()).st_mode )
         with NamedTemporaryFile( dir=fname.parent, prefix="."+fname.name+"_", delete=False,
-            mode = 'wb' if binary else 'w', encoding=encoding, errors=errors, newline=newline) as tf:
+                mode = 'wb' if binary else 'w', encoding=encoding, errors=errors, newline=newline) as tf:
             try:
                 yield infh, tf
             except BaseException:
@@ -238,11 +251,13 @@ def replacer(file :Filename, *, binary :bool=False, encoding=None, errors=None, 
                 os.unlink(tf.name)
                 raise
     # note because any exceptions are reraised above, we can only get here on success:
-    try: os.chmod(tf.name, origmode)
-    except NotImplementedError: pass  # pragma: no cover
+    try:
+        os.chmod(tf.name, origmode)
+    except NotImplementedError:  # pragma: no cover
+        pass
     os.replace(tf.name, fname)
 
-def replace_symlink(src :Filename, dst :Filename, *, missing_ok :bool=False):
+def replace_symlink(src :Filename, dst :Filename, *, missing_ok :bool=False):  # cover-only-posix
     """Attempt to atomically replace (or create) a symbolic link pointing to ``src`` named ``dst``.
 
     This function works by trying to choose a temporary filename for the link in the destination directory,
@@ -257,28 +272,30 @@ def replace_symlink(src :Filename, dst :Filename, *, missing_ok :bool=False):
     :seealso: :func:`replace_link` can do the same, but using a temporary directory instead of
         a temporary file in the same directory as the target file.
     """
-    if os.name != 'posix':  # pragma: no cover
+    if os.name != 'posix':  # cover-not-posix
         raise NotImplementedError("only available on POSIX systems")
     dst = Path(dst)  # DON'T Path.resolve() because that resolves symlinks
-    try: dst.lstat()  # Path.exists() resolves symlinks
+    try:
+        dst.lstat()  # Path.exists() resolves symlinks
     except FileNotFoundError:
         if missing_ok:
             os.symlink(src, dst)
             return
-        else: raise
+        raise
     while True:
         tf = dst.parent / ( "."+dst.name+"_"+str(uuid.uuid4()) )
         try:
             os.symlink(src, tf)  # "Create a symbolic link pointing to src named dst."
             break  # this name was unused (highly likely)
-        except FileExistsError: pass  # try again
+        except FileExistsError:
+            pass  # try again
     try:
         os.replace(tf, dst)
     except BaseException:
         os.unlink(tf)
         raise
 
-def replace_link(src :Filename, dst :Filename, *, symbolic :bool=False):
+def replace_link(src :Filename, dst :Filename, *, symbolic :bool=False):  # cover-only-posix
     """Attempt to atomically create or replace a hard or symbolic link pointing to ``src`` named ``dst``.
 
     This function works by creating the link in a new temporary directory first,
@@ -290,37 +307,37 @@ def replace_link(src :Filename, dst :Filename, *, symbolic :bool=False):
     intended for files with a single writer and multiple readers.
     Multiple writers will need to be coordinated with external locking mechanisms.
     """
-    if os.name != 'posix':  # pragma: no cover
+    if os.name != 'posix':  # cover-not-posix
         # Although in theory Python provides os.link and os.symlink on Windows, we don't support that here.
         raise NotImplementedError("only available on POSIX systems")
     # Reminder to self: DON'T Path.resolve() because that resolves symlinks
     with TemporaryDirectory(dir=Path(dst).parent) as td:
         tf = Path(td, Path(src).name)
-        if symbolic: os.symlink(src, tf)  # "Create a symbolic link pointing to src named dst."
-        else: os.link(src, tf)  # "Create a hard link pointing to src named dst."
+        if symbolic:
+            os.symlink(src, tf)  # "Create a symbolic link pointing to src named dst."
+        else:
+            os.link(src, tf)  # "Create a hard link pointing to src named dst."
         os.replace(tf, dst)
 
-# noinspection PyPep8Naming
 @contextmanager
-def NamedTempFileDeleteLater(*args, **kwargs) -> Generator:  # cover-req-lt3.12
+def NamedTempFileDeleteLater(*args, **kwargs) -> Generator:  # pylint: disable=invalid-name  # cover-req-lt3.12
     """A :func:`~tempfile.NamedTemporaryFile` that is unlinked on context manager exit, not on close.
 
     On Python >=3.12, this simply calls :func:`tempfile.NamedTemporaryFile` with ``delete=True``
     and the new ``delete_on_close=False``."""
-    tf = NamedTemporaryFile(*args, **kwargs, delete=False)  # type: ignore
-    try: yield tf
-    finally: os.unlink(tf.name)
-if sys.hexversion>=0x030C00B0:  # cover-req-ge3.12
-    from functools import partial
-    #: As of Python 3.12, simply an alias for :func:`tempfile.NamedTemporaryFile` with ``delete=True`` and ``delete_on_close=False``.
-    NamedTempFileDeleteLater = partial(NamedTemporaryFile, delete=True, delete_on_close=False)  # type: ignore
-else: pass  # cover-req-lt3.12
+    tf = NamedTemporaryFile(*args, **kwargs, delete=False)  # type: ignore[call-overload]
+    try:
+        yield tf
+    finally:
+        os.unlink(tf.name)
+NamedTempFileDeleteLater = ( partial(NamedTemporaryFile, delete_on_close=False, delete=True)  # pyright: ignore [reportCallIssue]
+                            if sys.hexversion>=0x030C00B0 else NamedTempFileDeleteLater )  # type: ignore[assignment]
 
 _perm_map :dict[bool, dict[int, int]] = {
     False: { 0: 0o444, S_IXUSR: 0o555, S_IWUSR: 0o644, S_IWUSR|S_IXUSR: 0o755 },
     True:  { 0: 0o444, S_IXUSR: 0o555, S_IWUSR: 0o664, S_IWUSR|S_IXUSR: 0o775 },
 }
-def simple_perms(st_mode :int, *, group_write :bool = False) -> tuple[int, int]:
+def simple_perms(st_mode :int, *, group_write :bool = False) -> tuple[int, int]:  # pragma: no cover
     """This function tests a file's permission bits to see if they are in a small set of "simple" permissions
     and suggests new permission bits if they are not.
 

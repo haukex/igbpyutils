@@ -1,59 +1,55 @@
-name: Python Tests and Coverage
-on: [push, pull_request]
+# https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions
+name: Full Python Tests, Lint, and Coverage (all versions and OSes)
+on:
+  push:
+    # only on commits, not on tags
+    branches:
+      - '**'
+  pull_request:
 jobs:
-  tests-linux:
-    name: CPython ${{ matrix.python-version }} on Ubuntu Linux with Coverage and Mypy
-    runs-on: Ubuntu-latest
+  tests:
+    name: CPython ${{ matrix.python-version }} on ${{ matrix.os }}
+    # Reminder: Keep in sync with dev/local-actions.sh
     strategy:
       fail-fast: false
       matrix:
-        # https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-          allow-prereleases: true
-      - name: Install Dependencies
-        run: |
-          python --version
-          python -m pip install --upgrade pip wheel coverage mypy
-          pip install -r requirements.txt
-      - name: Generate coveragerc file
-        run: python -c 'from igbpyutils.dev import generate_coveragerc_cli as main; main()' -f${{ matrix.python-version }} 9 13
-      - name: Python Tests with Coverage
-        env:
-          PYTHONWARNDEFAULTENCODING: 1
-          PYTHONWARNINGS: error
-        run: coverage run --rcfile=.coveragerc${{ matrix.python-version }} --branch -m unittest -v
-      - name: Check Coverage
-        run: coverage report --rcfile=.coveragerc${{ matrix.python-version }} --show-missing --fail-under=100
-      - name: Mypy
-        run: mypy --python-version ${{ matrix.python-version }} igbpyutils tests
-  tests-nonlinux:
-    name: CPython ${{ matrix.python-version }} on ${{ matrix.os }} (no Coverage or Mypy)
+        os: [Ubuntu, Windows, macOS]
+        # Remember that some tests below only run on one version, so keep that up-to-date.
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
     runs-on: ${{ matrix.os }}-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [Windows, macOS]
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
     steps:
-      - uses: actions/checkout@v3
+      - name: Disable autocrlf on Windows
+        if: ${{ matrix.os == 'Windows' }}
+        # https://github.com/actions/checkout/issues/135
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install pyright
+        run: npm install --global pyright
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           allow-prereleases: true
-      - name: Install Dependencies
-        run: |
-          python --version
-          python -m pip install --upgrade pip wheel
-          pip install -r requirements.txt
-      - name: Python Tests
-        env:
-          PYTHONWARNDEFAULTENCODING: 1
-          PYTHONWARNINGS: error
-        run: python -m unittest -v
+          # https://github.com/actions/setup-python#caching-packages-dependencies
+          cache: pip
+          # remember to keep in sync with Makefile:
+          cache-dependency-path: |
+            requirements.txt
+            dev/requirements.txt
+      - name: Install dependencies
+        run: make installdeps
+      - name: Run checks and lint
+        run: make smoke-checks ver-checks
+      - name: Run version-independent checks
+        if: ${{ matrix.python-version == '3.12' }}
+        run: make other-checks
+      - name: Run nix-checks and shellcheck on Linux
+        if: ${{ matrix.os == 'Ubuntu' }}
+        # Only run nix-checks on Ubuntu because it doesn't work on Windows and bash is too old on macOS.
+        # Only run shellcheck on Ubuntu because it's only installed there by default.
+        run: make nix-checks shellcheck
+      - name: Tests and Coverage
+        run: make coverage

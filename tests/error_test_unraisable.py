@@ -16,6 +16,5 @@ if __name__ == '__main__':  # pragma: no cover
     # only set up our custom handlers when we're run, not loaded as a module!
     igbpyutils.error.init_handlers()
     foo :Optional[Foo] = Foo()
-    # noinspection PyRedeclaration
-    foo = None
+    foo = None  # pylint: disable=disallowed-name
     gc.collect()

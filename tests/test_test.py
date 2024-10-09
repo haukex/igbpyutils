@@ -26,11 +26,10 @@ from igbpyutils.test import tempcopy
 class TestTestUtils(unittest.TestCase):
 
     def test_tempcopy(self):
-        obj = { "hello":"world", "foo":[1,2.3,True,None] }
+        obj :dict = { "hello":"world", "foo":[1,2.3,True,None] }
         with tempcopy(obj) as o2:
             self.assertIsNot( obj, o2 )
             self.assertIsNot( obj['foo'], o2['foo'] )
-            # noinspection PyTypeChecker
             o2['foo'][0] = "bar"
             self.assertEqual( o2, { "hello":"world", "foo":["bar",2.3,True,None] } )
             self.assertEqual( obj, { "hello":"world", "foo":[1,2.3,True,None] } )

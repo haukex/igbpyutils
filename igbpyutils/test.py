@@ -26,7 +26,7 @@ from copy import deepcopy
 from typing import TypeVar, Generic
 
 _T = TypeVar('_T')
-class tempcopy(Generic[_T]):
+class tempcopy(Generic[_T]):  # pylint: disable=invalid-name
     """A simple context manager that provides a temporary :func:`~copy.deepcopy` of the variable given to it."""
     def __init__(self, obj :_T):
         self.obj = deepcopy(obj)

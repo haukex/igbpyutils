@@ -4,6 +4,10 @@ Changelog for ``igbpyutils``
 Changelog
 ---------
 
+v0.8.0 - *not yet released*
+    - **REMOVED** ``gen-coveragerc`` and **deprecated** :func:`~igbpyutils.dev.generate_coveragerc`
+        - Use https://pypi.org/project/coverage-simple-excludes/ instead.
+
 v0.7.0 - Sun Oct  6 2024
     - Added :class:`~igbpyutils.error.LoggingStream` for better type checking
       on :func:`igbpyutils.error.logging_config`.

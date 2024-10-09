@@ -37,7 +37,7 @@ from igbpyutils.file import (to_Paths, autoglob, Pushd, filetypestr, is_windows_
 class TestFileUtils(unittest.TestCase):
 
     def setUp(self):
-        self.maxDiff = None
+        self.maxDiff = None  # pylint: disable=invalid-name
 
     def test_to_paths(self):
         s = __file__
@@ -48,8 +48,7 @@ class TestFileUtils(unittest.TestCase):
         self.assertEqual( (p,), tuple(to_Paths(p)) )
         self.assertEqual( (p,p,p), tuple(to_Paths((s,b,p))) )
         with self.assertRaises(TypeError):
-            # noinspection PyTypeChecker
-            tuple( to_Paths((123,)) )
+            tuple( to_Paths((123,)) )  # type: ignore[arg-type]
 
     def test_autoglob(self):
         testpath = Path(__file__).parent
@@ -80,10 +79,14 @@ class TestFileUtils(unittest.TestCase):
             self.assertEqual( files+[noglob], sorted(autoglob([testglob, noglob], force=True)) )
 
         finally:  # pragma: no cover
-            if orig_shell is None: os.environ.pop('SHELL', None)
-            else: os.environ['SHELL'] = orig_shell
-            if orig_comsp is None: os.environ.pop('COMSPEC', None)
-            else: os.environ['COMSPEC'] = orig_comsp
+            if orig_shell is None:
+                os.environ.pop('SHELL', None)
+            else:
+                os.environ['SHELL'] = orig_shell
+            if orig_comsp is None:
+                os.environ.pop('COMSPEC', None)
+            else:
+                os.environ['COMSPEC'] = orig_comsp
 
     def test_cmdline_rglob(self):
         iswin = sys.platform.startswith('win32')
@@ -97,12 +100,13 @@ class TestFileUtils(unittest.TestCase):
             (td/'.two.txt').touch()
             (td/'foo'/'three.txt').touch()
             # NOTE I'm not sure why the following doesn't report coverage on Python 3.9
-            if not iswin:  # cover-req-ge3.10
+            if not iswin:  # cover-not-win32
                 (td/'bar').symlink_to('foo')
                 (td/'outside').symlink_to(tempf.name)
                 (td/'foo'/'.link.txt').symlink_to('../.two.txt')
                 (td/'foo'/'broken.txt').symlink_to('../does_not_exist')
-            else: pass  # pragma: no cover
+            else:  # cover-only-win32
+                pass
             with Pushd(td):
                 self.assertEqual( sorted([ td, td/'foo', td/'one.txt', td/'.two.txt', td/'foo'/'three.txt' ]
                     + ([] if iswin else [ td/'bar', td/'outside', td/'foo'/'.link.txt', td/'foo'/'broken.txt' ])),
@@ -117,7 +121,9 @@ class TestFileUtils(unittest.TestCase):
                     + ([] if iswin else [ Path('bar'), Path('outside'), Path('foo','.link.txt'), Path('foo','broken.txt') ])),
                     sorted( cmdline_rglob([]) ))
                 # empty generator (like autoglob) should be same as empty list
-                self.assertEqual( sorted( cmdline_rglob([]) ), sorted( cmdline_rglob( x for x in [] ) ) )
+                def empty_gen():
+                    yield from ()
+                self.assertEqual( sorted( cmdline_rglob([]) ), sorted( cmdline_rglob(empty_gen()) ) )
                 # Use a simpler test for the duplicate detection, because we can't be sure of the directory structure on the test runner
                 self.assertEqual( [td/'one.txt'], list(cmdline_rglob([td/'one.txt', 'one.txt'])) )
                 #self.assertEqual( sorted([ Path('foo'), Path('foo','three.txt'), td, td/'one.txt', td/'.two.txt' ]
@@ -127,9 +133,8 @@ class TestFileUtils(unittest.TestCase):
     def test_pushd(self):
         def realpath(pth):
             if sys.hexversion>=0x030A00B0:  # cover-req-ge3.10
-                return os.path.realpath(pth, strict=True)
-            else:  # cover-req-lt3.10
-                return os.path.realpath(pth)
+                return os.path.realpath(pth, strict=True)  # type: ignore[call-overload, unused-ignore]
+            return os.path.realpath(pth)  # cover-req-lt3.10
         prevwd = realpath(os.getcwd())
         with (TemporaryDirectory() as td1, TemporaryDirectory() as td2):
             # basic pushd
@@ -140,7 +145,8 @@ class TestFileUtils(unittest.TestCase):
                 self.assertEqual(realpath(os.getcwd()), realpath(td1))
             self.assertEqual(realpath(os.getcwd()), prevwd)
             # exception inside the `with`
-            class BogusError(RuntimeError): pass
+            class BogusError(RuntimeError):
+                pass
             with self.assertRaises(BogusError):
                 with Pushd(td2):
                     self.assertEqual(realpath(os.getcwd()), realpath(td2))
@@ -162,20 +168,21 @@ class TestFileUtils(unittest.TestCase):
     def test_filetypestr(self):
         with TemporaryDirectory() as td:
             tp = Path(td)
-            with open(tp/'foo', 'w', encoding='ASCII') as fh: print("foo", file=fh)
+            with open(tp/'foo', 'w', encoding='ASCII') as fh:
+                print("foo", file=fh)
             (tp/'bar').mkdir()
             self.assertEqual( 'regular file', filetypestr( os.lstat(tp/'foo') ) )
             self.assertEqual( 'directory', filetypestr( os.lstat(tp/'bar') ) )
             try:
                 (tp/'baz').symlink_to('foo')
-            except OSError:  # pragma: no cover
-                print(f"skip-symlink", end='.', file=sys.stderr)
-            else:
+            except OSError:  # cover-only-win32
+                print("skip-symlink", end='.', file=sys.stderr)
+            else:  # cover-not-win32
                 self.assertEqual( 'symbolic link', filetypestr( os.lstat(tp/'baz') ) )
-            if hasattr(os, 'mkfifo'):
-                os.mkfifo(tp/'quz')
+            if hasattr(os, 'mkfifo'):  # cover-not-win32
+                os.mkfifo(tp/'quz')  # pyright: ignore [reportAttributeAccessIssue]
                 self.assertEqual( 'FIFO (named pipe)', filetypestr( os.lstat(tp/'quz') ) )
-            else:  # pragma: no cover
+            else:  # cover-only-win32
                 print("skip-fifo", end='.', file=sys.stderr)
 
     def test_is_windows_filename_bad(self):
@@ -227,40 +234,40 @@ class TestFileUtils(unittest.TestCase):
 
             # Test errors
             with self.assertRaises(TypeError):
-                # noinspection PyTypeChecker
-                with replacer(bytes()): pass
+                with replacer(bytes()):  # type: ignore[arg-type]
+                    pass  # pragma: no cover
             with self.assertRaises(ValueError):
-                with replacer(Path(tf.name).parent): pass
+                with replacer(Path(tf.name).parent):
+                    pass  # pragma: no cover
 
         # Permissions test
-        if not sys.platform.startswith('win32'):
+        if not sys.platform.startswith('win32'):  # cover-not-win32
             with NamedTempFileDeleteLater('w', encoding='UTF-8') as tf:
                 print("Hello\nWorld!", file=tf)
                 tf.close()
                 orig_ino = os.stat(tf.name).st_ino
                 os.chmod(tf.name, 0o741)
-                with replacer(tf.name, encoding='UTF-8') as (_, ofh): pass
+                with replacer(tf.name, encoding='UTF-8') as (_, ofh):
+                    pass
                 self.assertFalse( os.path.exists(ofh.name) )
                 st = os.stat(tf.name)
                 self.assertNotEqual( st.st_ino, orig_ino )
                 self.assertEqual( stat.S_IMODE(st.st_mode), 0o741 )
-        else:   # pragma: no cover
-            print(f"skip-chmod", end='.', file=sys.stderr)
+        else:   # cover-only-win32
+            print("skip-chmod", end='.', file=sys.stderr)
 
-    def test_replace_symlink(self):
-        if os.name != 'posix':  # pragma: no cover
-            with self.assertRaises(NotImplementedError):
-                replace_symlink('/tmp/foo', '/tmp/bar')
-            return
-
+    @unittest.skipIf(condition=os.name!='posix', reason='only on POSIX')
+    def test_replace_symlink(self):  # cover-only-posix
         with TemporaryDirectory() as td:
             tp = Path(td)
             fx = tp/'x.txt'
             fy = tp/'y.txt'
-            with fx.open('w', encoding='ASCII') as fh: fh.write("Hello, World\n")
+            with fx.open('w', encoding='ASCII') as fh:
+                fh.write("Hello, World\n")
 
             def assert_state(linktarg :str, xtra :Optional[list[Path]]=None):
-                if not xtra: xtra = []
+                if not xtra:
+                    xtra = []
                 self.assertEqual( sorted(tp.iterdir()), sorted([fx,fy]+xtra) )
                 self.assertTrue( fx.is_file() )
                 self.assertTrue( fy.is_symlink() )
@@ -299,11 +306,15 @@ class TestFileUtils(unittest.TestCase):
                 replace_symlink(fx, fz)
             assert_state(str(fx), [fz])
 
-    def test_replace_link(self):
-        if os.name != 'posix':  # pragma: no cover
-            with self.assertRaises(NotImplementedError):
-                replace_link('/tmp/foo', '/tmp/bar')
-            return
+    @unittest.skipIf(condition=os.name=='posix', reason='not on POSIX')
+    def test_replace_link_nonposix(self):  # cover-not-posix
+        with self.assertRaises(NotImplementedError):
+            replace_symlink('/tmp/foo', '/tmp/bar')
+        with self.assertRaises(NotImplementedError):
+            replace_link('/tmp/foo', '/tmp/bar')
+
+    @unittest.skipIf(condition=os.name!='posix', reason='only on POSIX')
+    def test_replace_link(self):  # cover-only-posix
 
         def assert_hardlink(a :Path, b:Path):
             self.assertTrue( a.is_file() )
@@ -329,8 +340,10 @@ class TestFileUtils(unittest.TestCase):
             fx = tp/'x.txt'
             fy = tp/'y.txt'
             fz = tp/'z.txt'
-            with fx.open('w', encoding='ASCII') as fh: fh.write("Hello, World\n")
-            with fz.open('w', encoding='ASCII') as fh: fh.write("Testing 123\n")
+            with fx.open('w', encoding='ASCII') as fh:
+                fh.write("Hello, World\n")
+            with fz.open('w', encoding='ASCII') as fh:
+                fh.write("Testing 123\n")
             self.assertEqual( sorted(tp.iterdir()), [fx, fz] )
 
             replace_link(fx, fy)  # create
@@ -393,16 +406,16 @@ class TestFileUtils(unittest.TestCase):
             self.assertTrue( Path(tf2.name).exists() )
         self.assertFalse( Path(tf2.name).exists() )
         if sys.hexversion>=0x030C00B0:  # cover-req-ge3.12
-            # noinspection PyArgumentList
-            with NamedTemporaryFile(delete=True, delete_on_close=False) as tf3:
+            with NamedTemporaryFile(delete=True, delete_on_close=False) as tf3:  # type: ignore[call-overload, unused-ignore]  # pylint: disable=unexpected-keyword-arg  # noqa: E501
                 tf3.write(b'Quz')
                 tf3.close()
                 self.assertTrue( Path(tf3.name).exists() )
             self.assertFalse( Path(tf3.name).exists() )
-        else: pass  # cover-req-lt3.12
+        else:  # cover-req-lt3.12
+            pass
 
     @unittest.skipIf(condition=sys.platform.startswith('win32'), reason='not on Windows')
-    def test_simple_perms(self):
+    def test_simple_perms(self):  # cover-not-win32
         testcases = (
             # mode, sugg,  dir,   gw,    gw+dir
             (0o444, 0o444, 0o555, 0o444, 0o555),
@@ -452,8 +465,8 @@ class TestFileUtils(unittest.TestCase):
                 return call_count
             self.assertEqual( dummy_func(), 2 )
             self.assertEqual( dummy_func(), 2 )
-            self.assertEqual( expensive_func.__wrapped__(), 3 )
-            self.assertEqual( dummy_func.__wrapped__(), 4 )
+            self.assertEqual( expensive_func.__wrapped__(), 3 )  # type: ignore[attr-defined]
+            self.assertEqual( dummy_func.__wrapped__(), 4 )  # type: ignore[attr-defined]
             self.assertEqual( expensive_func(), 1 )
             self.assertEqual( dummy_func(), 2 )
         self.assertEqual(err.getvalue(), f"Wrote {cf2}\nRead {cf2}\nRead {cf2}\n")

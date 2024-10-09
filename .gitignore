@@ -1,10 +1,8 @@
-__pycache__/
 .venv*/
-.ipynb_checkpoints/
-/.coverage
-/.coveragerc3.*
-/htmlcov/
-/.idea/
+__pycache__/
+.mypy_cache/
+.coverage
+coverage.xml
+htmlcov/
 /dist/
 /*.egg-info/
-.mypy_cache/
