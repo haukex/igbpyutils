@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """Tests for ``igbpyutils.file``.
 
 Author, Copyright, and License
@@ -78,6 +77,7 @@ class TestFileUtils(unittest.TestCase):
             self.assertEqual( [testglob], list(autoglob([testglob])) )
             self.assertEqual( files+[noglob], sorted(autoglob([testglob, noglob], force=True)) )
 
+        # coverage disabled because we don't know what the state of the environment was:
         finally:  # pragma: no cover
             if orig_shell is None:
                 os.environ.pop('SHELL', None)
@@ -476,6 +476,3 @@ class TestFileUtils(unittest.TestCase):
                 with open('hello', encoding='UTF-8') as fh:
                     self.assertEqual( fh.read(), 'world' )
         self.assertEqual( out.getvalue(), 'Hello, World' )
-
-if __name__ == '__main__':  # pragma: no cover
-    unittest.main()

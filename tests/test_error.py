@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """Tests for ``igbpyutils.error``.
 
 Author, Copyright, and License
@@ -220,7 +219,3 @@ class TestErrorUtils(unittest.TestCase):
                 self.assertEqual(fh.read(),
                                  'CRITICAL test_logging_config: BOOM\n'
                                  "INFO in test_logging_config: What's up?\n")
-
-
-if __name__ == '__main__':  # pragma: no cover
-    unittest.main()

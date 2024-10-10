@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """Test various methods to walk a directory tree.
 
 This test does not actually test any functions in this package,
@@ -195,7 +194,3 @@ class TestDirIteration(unittest.TestCase):
                         yield p, FileType.OTHER
         self.assertEqual(self.expect,
             sorted( (p, t) for p,t in os_listdirer(self.td) ) )
-
-
-if __name__ == '__main__':  # pragma: no cover
-    unittest.main()

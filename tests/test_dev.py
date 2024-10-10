@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """Tests for ``igbpyutils.dev``.
 
 Author, Copyright, and License
@@ -280,6 +279,3 @@ class TestDevUtils(unittest.TestCase):
                 f"INFO {py1}: File looks like a normal library",
                 f"NOTICE {py3}: File looks like a normal script (but could use `if __name__=='__main__'`)",
             ])
-
-if __name__ == '__main__':  # pragma: no cover
-    unittest.main()

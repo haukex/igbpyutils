@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """Tests for ``igbpyutils.dt``.
 
 Author, Copyright, and License
@@ -42,6 +41,3 @@ class TestDateTimeUtils(unittest.TestCase):
         self.assertEqual( str(-td3d), "-4 days, 22:57:57" )
         self.assertEqual( timedelta_str(td3d), "3 days, 1:02:03" )
         self.assertEqual( timedelta_str(-td3d), "-3 days, 1:02:03" )
-
-if __name__ == '__main__':  # pragma: no cover
-    unittest.main()

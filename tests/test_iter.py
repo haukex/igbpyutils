@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """Tests for ``igbpyutils.iter``.
 
 Author, Copyright, and License
@@ -115,6 +114,3 @@ class TestIterTools(unittest.TestCase):
         # https://github.com/nedbat/coveragepy/issues/1333
         lst = [ ever for _e,_just,ever in classify_unique((1,2,3,1)) ]
         self.assertTrue( not all( lst ) )
-
-if __name__ == '__main__':  # pragma: no cover
-    unittest.main()

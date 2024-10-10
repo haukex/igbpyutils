@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """Tests for ``igbpyutils.test``.
 
 Author, Copyright, and License
@@ -34,6 +33,3 @@ class TestTestUtils(unittest.TestCase):
             self.assertEqual( o2, { "hello":"world", "foo":["bar",2.3,True,None] } )
             self.assertEqual( obj, { "hello":"world", "foo":[1,2.3,True,None] } )
         self.assertEqual( obj, { "hello":"world", "foo":[1,2.3,True,None] } )
-
-if __name__ == '__main__':  # pragma: no cover
-    unittest.main()

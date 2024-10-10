@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """Tests for some iterator patterns.
 
 This test does not actually test any functions in this package,
@@ -150,6 +149,3 @@ class TestIterPatterns(unittest.TestCase):
 
         iters = ( ("a","b"), range(3,6), [None, None], {"i","j","k","l"}, "XYZ" )
         self.assertEqual( sorted( product(*iters) ), sorted( gray_product(*iters) ) )
-
-if __name__ == '__main__':  # pragma: no cover
-    unittest.main()

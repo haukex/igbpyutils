@@ -69,9 +69,9 @@ def ex_repr(ex: BaseException) -> str:
 
 # Equivalent to Lib/warnings.py, but customize UserWarning messages to be shorter.
 def _showwarning(message, category, filename, lineno, file=None, line=None):  # pylint: disable=too-many-positional-arguments
-    if file is None:  # pragma: no cover
+    if file is None:  # pragma: no branch
         file = sys.stderr
-        if file is None:
+        if file is None:  # pragma: no cover
             return
     if issubclass(category, UserWarning):
         try:
@@ -87,6 +87,8 @@ def _showwarning(message, category, filename, lineno, file=None, line=None):  # 
         file.write(text)
     except OSError:  # pragma: no cover
         pass
+
+# NOTE the following four handlers are actually tested, but coverage doesn't see those tests
 
 def _excepthook(_type, value, _traceback):  # pragma: no cover
     for s in javaishstacktrace(value):
