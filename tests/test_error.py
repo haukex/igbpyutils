@@ -186,6 +186,8 @@ class TestErrorUtils(unittest.TestCase):
 
     def test_logging_config(self):
         # Note I used to patch time.time here, but that no longer works as of Python 3.13, so just drop the time
+        with self.assertRaises(TypeError):
+            logging_config(stream="")  # type: ignore[arg-type]
         logger = logging.getLogger("test_logging_config")
         with (redirect_stdout(io.StringIO()) as out, redirect_stderr(io.StringIO()) as err):
             logging_config(fmt='%(levelname)s %(name)s: %(message)s')

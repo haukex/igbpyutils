@@ -61,10 +61,7 @@ _basepath = Path(__main__.__file__).parent.resolve(strict=True) \
 
 def extype_fullname(ex: type) -> str:
     """Return the name of an exception together with its module name, if any."""
-    if ex.__module__ in ('builtins','__main__'):
-        return ex.__name__
-    #else:
-    return ex.__module__ + "." + ex.__name__
+    return ex.__name__ if ex.__module__ in ('builtins','__main__') else ex.__module__+"."+ex.__name__
 
 def ex_repr(ex: BaseException) -> str:
     """Return a representation of the exception including its full name and ``.args``."""
@@ -137,8 +134,8 @@ class CustomHandlers:
             self.loop = asyncio.get_running_loop()  # pylint: disable=attribute-defined-outside-init
         except RuntimeError:
             self.loop = None  # pylint: disable=attribute-defined-outside-init
-        else:
-            self.loop.set_exception_handler(asyncio_exception_handler)  # pragma: no cover
+        else:  # pragma: no cover
+            self.loop.set_exception_handler(asyncio_exception_handler)
         return self
     def __exit__(self, exc_type, exc_val, exc_tb):
         warnings.showwarning = self.showwarning_orig
@@ -168,15 +165,11 @@ def javaishstacktrace(ex :BaseException) -> Generator[str, None, None]:
     for e in reversed(causes):
         r = ex_repr(e)
         if isinstance(e, AssertionError):  # for "assert"s we'd like to see the source that caused it
-            assert e.__traceback__  # for some reason, the coverage tool is reporting the following `if` is false on 3.9?
-            if e.__traceback__:  # cover-req-ge3.10
+            # these two should always be true, but guard anyway:
+            if e.__traceback__:  # pragma: no branch
                 lines = inspect.getinnerframes(e.__traceback__)[-1].code_context
-                if lines:
+                if lines:  # pragma: no branch
                     r += f" [{ lines[0].strip() if len(lines)==1 else ''.join(lines) !r}]"
-                else:  # pragma: no cover
-                    pass
-            else:  # cover-req-lt3.10
-                pass
         yield r if first else "which caused: " + r
         for item in reversed( extract_tb(e.__traceback__) ):
             try:
@@ -225,15 +218,16 @@ def logging_config(*,
     Note I also recommend using :func:`logging.captureWarnings`."""
     #TODO: Actually, logging.captureWarnings doesn't make a very good-looking logging message; we might want to write our own version...
     #TODO Later: Consider adding a function that only checks and/or modifies the formatters of existing handlers
+    if stream is None and filename is None or stream is True:
+        stream = sys.stderr
+    if stream is not None and not isinstance(stream, LoggingStream):
+        raise TypeError(f"not a LoggingStream: {type(stream)}")
     root = logging.getLogger()
     for hnd in root.handlers[:]:  # attribute is not documented, but this is what logging.basicConfig does
         root.removeHandler(hnd)
         hnd.close()
-    if stream is None and filename is None or stream is True:
-        stream = sys.stderr
     handlers :list[logging.Handler] = []
     if stream is not None:
-        assert isinstance(stream, LoggingStream)
         handlers.append(logging.StreamHandler(stream))
     if filename is not None:
         handlers.append(logging.FileHandler(filename, encoding='UTF-8', errors='namereplace'))

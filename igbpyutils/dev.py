@@ -29,8 +29,8 @@ import warnings
 import subprocess
 from stat import S_IXUSR
 from pathlib import Path
-from typing import NamedTuple, Optional
 from collections.abc import Sequence
+from typing import NamedTuple, Optional
 from igbpyutils.file import Filename, cmdline_rglob, autoglob
 
 class ResultLevel(enum.IntEnum):
