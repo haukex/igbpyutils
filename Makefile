@@ -8,7 +8,7 @@ py_code_locs = igbpyutils tests
 requirement_txts = requirements.txt dev/requirements.txt docs/requirements.txt
 perm_checks = ./* .gitignore .vscode .github
 
-# The user can change the following on the command line, but note that some tools below may not use this variable!
+# The user can change the following on the command line:
 PYTHON3BIN = python
 
 .PHONY: help tasklist installdeps test
@@ -37,7 +37,7 @@ installdeps:  ## Install project dependencies
 smoke-checks:  ## Basic smoke tests
 	@set -euxo pipefail
 	# example: [[ "$$OSTYPE" =~ linux.* ]]  # this project only runs on Linux
-	[[ "$$( $(PYTHON3BIN) -c 'import sys; print(sys.version_info.major)' )" -eq 3 ]]  # make sure we're on Python 3
+	$(PYTHON3BIN) -c 'import sys; sys.exit(0 if sys.version_info.major==3 else 1)'  # make sure we're on Python 3
 
 nix-checks:  ## Checks that depend on a *NIX OS/FS
 	@set -euo pipefail
@@ -57,7 +57,7 @@ nix-checks:  ## Checks that depend on a *NIX OS/FS
 			test -z "$$( find . \( -type d -name '.venv*' -prune \) -o \( -iname '*.sh' ! -executable -print \) )"
 		fi
 	fi
-	py-check-script-vs-lib $${unreliable_perms:+"--exec-git"} --notice $(py_code_locs)
+	$(PYTHON3BIN) -m igbpyutils.dev.script_vs_lib $${unreliable_perms:+"--exec-git"} --notice $(py_code_locs)
 	# exclusions to the above can be done via:
 	# find $(py_code_locs) -path '*/exclude/me.py' -o -type f -iname '*.py' -exec py-check-script-vs-lib --notice '{}' +
 

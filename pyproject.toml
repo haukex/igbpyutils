@@ -32,7 +32,7 @@ packages = ["igbpyutils"]
 dependencies = {file = ["requirements.txt"]}
 
 [project.scripts]
-py-check-script-vs-lib = "igbpyutils.dev:check_script_vs_lib_cli"
+py-check-script-vs-lib = "igbpyutils.dev.script_vs_lib:main"
 
 [project.urls]
 "Homepage" = "https://github.com/haukex/igbpyutils"

@@ -1,4 +1,4 @@
-"""Development Utility Functions
+"""Development Utility Functions: Script vs. Library Checker
 
 Author, Copyright, and License
 ------------------------------
@@ -25,12 +25,11 @@ import sys
 import ast
 import enum
 import argparse
-import warnings
 import subprocess
 from stat import S_IXUSR
 from pathlib import Path
 from collections.abc import Sequence
-from typing import NamedTuple, Optional
+from typing import NamedTuple, Union
 from igbpyutils.file import Filename, cmdline_rglob, autoglob
 
 class ResultLevel(enum.IntEnum):
@@ -72,19 +71,13 @@ class ScriptLibResult(NamedTuple):
     flags :ScriptLibFlags
 
 _IS_WINDOWS = sys.platform.startswith('win32')
-_git_ls_tree_re = re.compile(r'''\A([0-7]+) blob [a-fA-F0-9]{40}\t(.+)(?:\Z|\n)''')
+_git_ls_files_re = re.compile(r'''\A([0-7]+) [a-fA-F0-9]{40} \d+\t(.+?)(?:\r?\n|\Z)''')
 
-DEFAULT_SHEBANGS = (
-    '#!/usr/bin/env python3',
-    '#!/usr/bin/env python',
-    '#!/usr/bin/python3',
-    '#!/usr/bin/python',
-    '#!/usr/local/bin/python3',
-    '#!/usr/local/bin/python',
-)
+DEFAULT_SHEBANG_RE = re.compile(r'''\A\#\!/usr(?:/local)?/bin/(?:env +)?python3?\s*\Z''')
 
 def check_script_vs_lib(path :Filename,  # pylint: disable=too-many-return-statements
-                        *, known_shebangs :Sequence[str] = DEFAULT_SHEBANGS, exec_from_git :bool = False) -> ScriptLibResult:
+                        *, known_shebangs :Union[Sequence[str],re.Pattern] = DEFAULT_SHEBANG_RE,
+                        exec_from_git :bool = False) -> ScriptLibResult:
     """This function analyzes a Python file to see whether it looks like a library or a script,
     and checks several features of the file for consistency.
 
@@ -97,7 +90,8 @@ def check_script_vs_lib(path :Filename,  # pylint: disable=too-many-return-state
     - contains statements other than ``class``, ``def``, etc. in the main body
 
     :param path: The name of the file to analyze.
-    :param known_shebangs: You may provide your own list of shebang lines that this function will recognize here (each without the trailing newline).
+    :param known_shebangs: You may provide your own list of shebang lines that this function will recognize here,
+        either as a list of strings (without trailing newlines) or a regular expression.
     :param exec_from_git: If you set this to :obj:`True`, then instead of looking at the file's actual mode bits to determine whether the
         exec bit is set, the function will ask ``git`` for the mode bits of the file and use those.
     :return: A :class:`ScriptLibResult` object that indicates what was found and whether there are any inconsistencies.
@@ -111,17 +105,16 @@ def check_script_vs_lib(path :Filename,  # pylint: disable=too-many-return-state
     ignore_exec_bit = _IS_WINDOWS
     if exec_from_git:
         flags &= ~ScriptLibFlags.EXEC_BIT
-        #TODO: This fails for newly added files - `git ls-files --stage` instead?
-        res = subprocess.run(['git','ls-tree','HEAD',pth.name], cwd=pth.parent,
+        res = subprocess.run(['git','ls-files','--stage',pth.name], cwd=pth.parent,
                              encoding='UTF-8', check=True, capture_output=True)
         assert not res.returncode and not res.stderr
-        if m := _git_ls_tree_re.fullmatch(res.stdout):
+        if m := _git_ls_files_re.fullmatch(res.stdout):
             if m.group(2) != pth.name:
                 raise RuntimeError(f"Unexpected git output, filename mismatch {res.stdout!r}")
             if int(m.group(1), 8) & S_IXUSR:
                 flags |= ScriptLibFlags.EXEC_BIT
         else:
-            raise RuntimeError(f"Failed to parse git output {res.stdout!r}")
+            raise RuntimeError(f"Failed to parse git output {res.stdout!r} for {pth.name!r}")
         ignore_exec_bit = False
     shebang_line :str = ''
     if source.startswith('#!'):
@@ -142,7 +135,8 @@ def check_script_vs_lib(path :Filename,  # pylint: disable=too-many-return-state
             why_scriptlike.append(f"{type(node).__name__}@L{node.lineno}")  # type: ignore[attr-defined]
     if why_scriptlike:
         flags |= ScriptLibFlags.SCRIPT_LIKE
-    if flags&ScriptLibFlags.SHEBANG and shebang_line not in known_shebangs:
+    if flags&ScriptLibFlags.SHEBANG and not ( known_shebangs.fullmatch(shebang_line) if isinstance(known_shebangs, re.Pattern)
+                                              else shebang_line in known_shebangs ):
         return ScriptLibResult(pth, ResultLevel.WARNING, f"File has unrecognized shebang {shebang_line!r}", flags)
     if flags&ScriptLibFlags.NAME_MAIN and flags&ScriptLibFlags.SCRIPT_LIKE:
         return ScriptLibResult(pth, ResultLevel.ERROR, "File has `if __name__=='__main__'` and looks like a script due to "
@@ -167,7 +161,7 @@ def check_script_vs_lib(path :Filename,  # pylint: disable=too-many-return-state
     why :str = ', '.join(why_scriptlike) if flags&ScriptLibFlags.SCRIPT_LIKE else "`if __name__=='__main__'`"
     return ScriptLibResult(pth, ResultLevel.ERROR, f"File looks like a script (due to {why}) but is missing {' and '.join(missing)}", flags)
 
-def check_script_vs_lib_cli() -> None:
+def main() -> None:
     """Command-line interface for :func:`check_script_vs_lib`.
 
     If the module and script have been installed correctly, you should be able to run ``py-check-script-vs-lib -h`` for help."""
@@ -188,43 +182,3 @@ def check_script_vs_lib_cli() -> None:
         if result.level>=ResultLevel.WARNING or args.notice and result.level>=ResultLevel.NOTICE:
             issues += 1
     parser.exit(issues)
-
-def generate_coveragerc(*,  # pragma: no cover
-                        minver :int, maxver :int, forver :Optional[int]=None, outdir :Optional[Path]=None, verbose :bool=False):
-    """Generate ``.coveragerc3.X`` files for various Python 3 versions.
-
-    These generated files provide tags such as ``cover-req-ge3.10`` and ``cover-req-lt3.10`` that can be used
-    to exclude source code lines on ranges of Python versions. This tool is used within this project itself.
-    In addition, the tags ``cover-linux``, ``cover-win32``, and ``cover-darwin`` are supplied based on ``sys.platform``
-    for code for which coverage is only expected on those OSes (more such tags could be added in the future).
-    Because the generated files use the ``exclude_also`` config option, Coverage.py 7.2.0 or greater is required.
-
-    :param minver: The minimum Python minor version which to include in the generated tags, inclusive.
-    :param maxver: The maximum Python minor version which to include in the generated tags, exclusive.
-    :param forver: If specified, only a single ``.coverage3.X`` file for that minor version is generated,
-        otherwise files are generated for all versions in the aforementioned range.
-    :param outdir: The path into which to output the files. Defaults to the current working directory.
-    :param verbose: If true, ``print`` a message for each file written.
-    """
-    warnings.warn("Use coverage-simple-excludes instead", DeprecationWarning)
-    versions = range(minver, maxver)
-    if not versions:
-        raise ValueError("No versions in range")
-    if forver is not None and forver not in versions:
-        raise ValueError("forver must be in the range minver to maxver")
-    if not outdir:
-        outdir = Path()
-    for vc in versions if forver is None else (forver,):
-        fn = outdir / f".coveragerc3.{vc}"
-        with fn.open('x', encoding='ASCII', newline='\n') as fh:
-            print(f"# Generated .coveragerc for Python 3.{vc}\n[report]\nexclude_also =", file=fh)
-            if not sys.platform.startswith('linux'):
-                print("    cover-linux", file=fh)
-            if not sys.platform.startswith('win32'):
-                print("    cover-win32", file=fh)
-            if not sys.platform.startswith('darwin'):
-                print("    cover-darwin", file=fh)
-            for v in versions[1:]:
-                print("    cover-req-" + re.escape(f"{'ge' if v>vc else 'lt'}3.{v}"), file=fh)
-        if verbose:
-            print(f"Wrote {fn}")

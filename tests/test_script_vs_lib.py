@@ -30,7 +30,8 @@ from contextlib import redirect_stdout
 from io import TextIOWrapper, StringIO
 from tempfile import TemporaryDirectory
 from igbpyutils.file import NamedTempFileDeleteLater
-from igbpyutils.dev import ScriptLibFlags, ScriptLibResult, ResultLevel, check_script_vs_lib, check_script_vs_lib_cli
+from igbpyutils.dev.script_vs_lib import ScriptLibFlags, ScriptLibResult, ResultLevel, check_script_vs_lib
+import igbpyutils.dev.script_vs_lib as uut
 
 def write_test_file(name, bfh, flags :ScriptLibFlags, *, shebang :str = "#!/usr/bin/env python"):
     with TextIOWrapper(bfh, encoding='UTF-8') as fh:
@@ -183,7 +184,7 @@ win_test_cases = (
                     ScriptLibFlags.SHEBANG|ScriptLibFlags.SCRIPT_LIKE|ScriptLibFlags.NAME_MAIN),  # pylint: disable=unsupported-binary-operation,useless-suppression  # noqa: E501
 )
 
-class TestDevUtils(unittest.TestCase):
+class TestScriptVsLib(unittest.TestCase):
 
     def setUp(self):
         self.maxDiff = None  # pylint: disable=invalid-name
@@ -199,7 +200,7 @@ class TestDevUtils(unittest.TestCase):
         with NamedTempFileDeleteLater(suffix='.py') as ntf:
             path = Path(ntf.name)
             write_test_file(path, ntf, case1.flags, shebang='#!/bin/python')
-            self.assertEqual( check_script_vs_lib(path), case1._replace(path=path) )
+            self.assertEqual( check_script_vs_lib(path, known_shebangs=('#!/usr/bin/python',)), case1._replace(path=path) )
 
     def test_script_vs_lib_git(self):
         with TemporaryDirectory() as td:
@@ -209,20 +210,25 @@ class TestDevUtils(unittest.TestCase):
             subprocess.run(['git','config','--local','user.name','CI Test'], cwd=td, check=True)
             subprocess.run(['git','config','--local','core.autocrlf','false'], cwd=td, check=True)
             subprocess.run(['git','config','--local','core.fileMode','false'], cwd=td, check=True)
-            pyl = tdr/'library.py'
+            (tdr/'lib').mkdir()
+            pyl = tdr/'lib'/'library.py'
             with pyl.open('wb') as fh:
                 write_test_file(pyl, fh, ScriptLibFlags(0))
             pys = tdr/'script.py'
             with pys.open('wb') as fh:
                 write_test_file(pys, fh, ScriptLibFlags.SHEBANG|ScriptLibFlags.NAME_MAIN)
-            subprocess.run(['git','add',pyl.name,pys.name], cwd=td, check=True)
-            subprocess.run(['git','commit','--quiet','--message','test1'], cwd=td, check=True)
+            subprocess.run(['git','add',pyl.relative_to(td),pys.relative_to(td)], cwd=td, check=True)
             self.assertEqual(check_script_vs_lib(pyl, exec_from_git=True),
                              ScriptLibResult( pyl, ResultLevel.INFO,"File looks like a normal library", ScriptLibFlags(0) ))
             self.assertEqual(check_script_vs_lib(pys, exec_from_git=True),
                              ScriptLibResult( pys, ResultLevel.ERROR, "File looks like a script (due to `if __name__=='__main__'`) "
                                              "but is missing exec bit", ScriptLibFlags.SHEBANG|ScriptLibFlags.NAME_MAIN ))
-            subprocess.run(['git','update-index','--chmod=+x',pyl.name,pys.name], cwd=td, check=True)
+            subprocess.run(['git','update-index','--chmod=+x',pyl.relative_to(td),pys.relative_to(td)], cwd=td, check=True)
+            self.assertEqual(check_script_vs_lib(pyl, exec_from_git=True),
+                             ScriptLibResult( pyl, ResultLevel.ERROR, "File looks like a library but exec bit is set", ScriptLibFlags.EXEC_BIT))
+            self.assertEqual(check_script_vs_lib(pys, exec_from_git=True),
+                             ScriptLibResult( pys, ResultLevel.INFO, "File looks like a normal script",
+                                             ScriptLibFlags.EXEC_BIT|ScriptLibFlags.SHEBANG|ScriptLibFlags.NAME_MAIN ))  # pylint: disable=unsupported-binary-operation,useless-suppression  # noqa: E501
             subprocess.run(['git','commit','--quiet','--message','test2'], cwd=td, check=True)
             self.assertEqual(check_script_vs_lib(pyl, exec_from_git=True),
                              ScriptLibResult( pyl, ResultLevel.ERROR, "File looks like a library but exec bit is set", ScriptLibFlags.EXEC_BIT))
@@ -234,7 +240,7 @@ class TestDevUtils(unittest.TestCase):
                 check_script_vs_lib(pys, exec_from_git=True)
             with (self.assertRaises(RuntimeError),
                   patch('subprocess.run', return_value=SimpleNamespace(returncode=0, stderr='',
-                  stdout='100644 blob 2fdef5822492003bcf91a1ea8e73cd7b6ea01ba2\tnot-script.py\n'))):
+                  stdout='100644 2fdef5822492003bcf91a1ea8e73cd7b6ea01ba2 0\tnot-script.py\n'))):
                 check_script_vs_lib(pys, exec_from_git=True)
 
     def test_script_vs_lib_cli(self):
@@ -255,14 +261,14 @@ class TestDevUtils(unittest.TestCase):
             out1 = StringIO()
             sys.argv = ["py-check-script-vs-lib", str(tdr)]
             with (redirect_stdout(out1), patch('argparse.ArgumentParser.exit') as mock1):
-                check_script_vs_lib_cli()
+                uut.main()
             mock1.assert_called_once_with(1)
             self.assertEqual( out1.getvalue(), f"ERROR {py2}: File has shebang but seems to be missing anything script-like\n")
 
             out2 = StringIO()
             sys.argv = ["py-check-script-vs-lib", "-n", str(tdr)]
             with (redirect_stdout(out2), patch('argparse.ArgumentParser.exit') as mock2):
-                check_script_vs_lib_cli()
+                uut.main()
             mock2.assert_called_once_with(2)
             self.assertEqual( sorted(out2.getvalue().splitlines()), [
                 f"ERROR {py2}: File has shebang but seems to be missing anything script-like",
@@ -272,7 +278,7 @@ class TestDevUtils(unittest.TestCase):
             out3 = StringIO()
             sys.argv = ["py-check-script-vs-lib", "-v", str(tdr)]
             with (redirect_stdout(out3), patch('argparse.ArgumentParser.exit') as mock3):
-                check_script_vs_lib_cli()
+                uut.main()
             mock3.assert_called_once_with(1)
             self.assertEqual( sorted(out3.getvalue().splitlines()), [
                 f"ERROR {py2}: File has shebang but seems to be missing anything script-like",

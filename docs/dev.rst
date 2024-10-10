@@ -5,6 +5,10 @@ Development Utility Functions
    :members:
    :undoc-members:
 
+.. automodule:: igbpyutils.dev.script_vs_lib
+   :members:
+   :undoc-members:
+
 Author, Copyright, and License
 ------------------------------
 Copyright (c) 2023 Hauke Daempfling (haukex@zero-g.net)
