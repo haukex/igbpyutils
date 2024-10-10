@@ -99,14 +99,11 @@ class TestFileUtils(unittest.TestCase):
             (td/'one.txt').touch()
             (td/'.two.txt').touch()
             (td/'foo'/'three.txt').touch()
-            # NOTE I'm not sure why the following doesn't report coverage on Python 3.9
-            if not iswin:  # cover-not-win32
+            if not iswin:  # cover-not-win32  # pragma: no branch
                 (td/'bar').symlink_to('foo')
                 (td/'outside').symlink_to(tempf.name)
                 (td/'foo'/'.link.txt').symlink_to('../.two.txt')
                 (td/'foo'/'broken.txt').symlink_to('../does_not_exist')
-            else:  # cover-only-win32
-                pass
             with Pushd(td):
                 self.assertEqual( sorted([ td, td/'foo', td/'one.txt', td/'.two.txt', td/'foo'/'three.txt' ]
                     + ([] if iswin else [ td/'bar', td/'outside', td/'foo'/'.link.txt', td/'foo'/'broken.txt' ])),
@@ -173,17 +170,13 @@ class TestFileUtils(unittest.TestCase):
             (tp/'bar').mkdir()
             self.assertEqual( 'regular file', filetypestr( os.lstat(tp/'foo') ) )
             self.assertEqual( 'directory', filetypestr( os.lstat(tp/'bar') ) )
-            try:
+            if not sys.platform.startswith('win32'):  # cover-not-win32
                 (tp/'baz').symlink_to('foo')
-            except OSError:  # cover-only-win32
-                print("skip-symlink", end='.', file=sys.stderr)
-            else:  # cover-not-win32
                 self.assertEqual( 'symbolic link', filetypestr( os.lstat(tp/'baz') ) )
-            if hasattr(os, 'mkfifo'):  # cover-not-win32
-                os.mkfifo(tp/'quz')  # pyright: ignore [reportAttributeAccessIssue]
+                os.mkfifo(tp/'quz')  # pylint: disable=no-member,useless-suppression  # pyright: ignore [reportAttributeAccessIssue]
                 self.assertEqual( 'FIFO (named pipe)', filetypestr( os.lstat(tp/'quz') ) )
             else:  # cover-only-win32
-                print("skip-fifo", end='.', file=sys.stderr)
+                print("skip-symlink-fifo", end='.', file=sys.stderr)
 
     def test_is_windows_filename_bad(self):
         self.assertFalse( is_windows_filename_bad("Hello.txt") )
@@ -405,14 +398,12 @@ class TestFileUtils(unittest.TestCase):
             tf2.close()
             self.assertTrue( Path(tf2.name).exists() )
         self.assertFalse( Path(tf2.name).exists() )
-        if sys.hexversion>=0x030C00B0:  # cover-req-ge3.12
-            with NamedTemporaryFile(delete=True, delete_on_close=False) as tf3:  # type: ignore[call-overload, unused-ignore]  # pylint: disable=unexpected-keyword-arg  # noqa: E501
+        if sys.hexversion>=0x030C00B0:  # cover-req-ge3.12  # pragma: no branch
+            with NamedTemporaryFile(delete=True, delete_on_close=False) as tf3:  # type: ignore[call-overload, unused-ignore]  # pylint: disable=unexpected-keyword-arg,useless-suppression  # noqa: E501
                 tf3.write(b'Quz')
                 tf3.close()
                 self.assertTrue( Path(tf3.name).exists() )
             self.assertFalse( Path(tf3.name).exists() )
-        else:  # cover-req-lt3.12
-            pass
 
     @unittest.skipIf(condition=sys.platform.startswith('win32'), reason='not on Windows')
     def test_simple_perms(self):  # cover-not-win32

@@ -37,34 +37,34 @@ installdeps:  ## Install project dependencies
 smoke-checks:  ## Basic smoke tests
 	@set -euxo pipefail
 	# example: [[ "$$OSTYPE" =~ linux.* ]]  # this project only runs on Linux
-	[[ "$$($(PYTHON3BIN) --version)" =~ ^Python\ 3\. ]]  # make sure we're on Python 3
+	[[ "$$( $(PYTHON3BIN) -c 'import sys; print(sys.version_info.major)' )" -eq 3 ]]  # make sure we're on Python 3
 
 nix-checks:  ## Checks that depend on a *NIX OS/FS
 	@set -euo pipefail
-	UNRELIABLE_PERMS="yes"
+	unreliable_perms="yes"
 	if [ "$$OSTYPE" == "msys" ]; then  # e.g. Git bash on Windows
 		echo "- Assuming unreliable permission bits because Windows"
 		set -x
 	else
 		FSTYPE="$$( findmnt --all --first --noheadings --list --output FSTYPE --notruncate --target . )"
-		if [[ "$$FSTYPE" =~ ^(vfat|vboxsf)$$ ]]; then
+		if [[ "$$FSTYPE" =~ ^(vfat|vboxsf|9p)$$ ]]; then
 			echo "- Assuming unreliable permission bits because FSTYPE=$$FSTYPE"
 			set -x
 		else  # we can probably depend on permission bits being correct
-			UNRELIABLE_PERMS=""
+			unreliable_perms=""
 			set -x
 			$(PYTHON3BIN) -m simple_perms -r $(perm_checks)  # if this errors, run `simple-perms -m ...` for auto fix
 			test -z "$$( find . \( -type d -name '.venv*' -prune \) -o \( -iname '*.sh' ! -executable -print \) )"
 		fi
 	fi
-	py-check-script-vs-lib $${UNRELIABLE_PERMS:+"--exec-git"} --notice $(py_code_locs)
+	py-check-script-vs-lib $${unreliable_perms:+"--exec-git"} --notice $(py_code_locs)
 	# exclusions to the above can be done via:
 	# find $(py_code_locs) -path '*/exclude/me.py' -o -type f -iname '*.py' -exec py-check-script-vs-lib --notice '{}' +
 
 shellcheck:  ## Run shellcheck
 	@set -euxo pipefail
 	# https://www.gnu.org/software/findutils/manual/html_mono/find.html
-	find . \( -type d -name '.venv*' -prune \) -o \( -iname '*.sh' -exec shellcheck '{}' + \)
+	find . \( -type d \( -name '.venv*' -o -name '.devpod-internal' \) -prune \) -o \( -iname '*.sh' -exec shellcheck '{}' + \)
 
 ver-checks:  ## Checks that depend on the Python version
 	@set -euxo pipefail

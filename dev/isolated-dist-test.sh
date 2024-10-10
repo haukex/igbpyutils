@@ -6,19 +6,20 @@ set -euxo pipefail
 # and runs the test suite on it in an isolated venv.
 ###
 
-test -n "$1"
-DISTFILE="$(realpath "$1")"
-test -f "$DISTFILE"
+usage() { echo "Usage: $0 DIST_FILE" 1>&2; exit 1; }
+[[ $# -eq 1 ]] || usage
+dist_file="$(realpath "$1")"
+test -f "$dist_file" || usage
 
-cd "$( dirname "${BASH_SOURCE[0]}" )"/..
+cd -- "$( dirname -- "${BASH_SOURCE[0]}" )"/..
 
-TEMPDIR="$( mktemp --directory )"
-trap 'set +e; popd; rm -rf "$TEMPDIR"' EXIT
+temp_dir="$( mktemp --directory )"
+trap 'set +e; popd; rm -rf "$temp_dir"' EXIT
 
-rsync -a tests "$TEMPDIR" --exclude=__pycache__
+rsync -a tests "$temp_dir" --exclude=__pycache__
 
-pushd "$TEMPDIR"
+pushd "$temp_dir"
 python -m venv venv
 venv/bin/python -m pip -q install --upgrade pip
-venv/bin/python -m pip -q install "$DISTFILE"
+venv/bin/python -m pip -q install "$dist_file"
 venv/bin/python -Im unittest -v

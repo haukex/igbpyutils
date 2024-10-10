@@ -87,17 +87,15 @@ class TestDirIteration(unittest.TestCase):
             ( str(cls.td/'one'/'two'/'three'), FileType.DIR ),
             ( str(cls.td/'one'/'two'/'three'/'four.txt'), FileType.FILE )
         ]
-        if not sys.platform.startswith('win32'):  # cover-not-win32
+        if not sys.platform.startswith('win32'):  # cover-not-win32  # pragma: no branch
             (cls.td/'foo'/'quz.txt').symlink_to('../.quz.txt')
             (cls.td/'one'/'two'/'three'/'foo').symlink_to('../../../foo')
-            os.mkfifo(cls.td/'foo'/'xy.fifo')  # pylint: disable=no-member  # pyright: ignore [reportAttributeAccessIssue]
+            os.mkfifo(cls.td/'foo'/'xy.fifo')  # pylint: disable=no-member,useless-suppression  # pyright: ignore [reportAttributeAccessIssue]
             cls.expect.extend([
                 ( str(cls.td/'foo'/'quz.txt'), FileType.SYMLINK ),
                 ( str(cls.td/'one'/'two'/'three'/'foo'), FileType.SYMLINK ),
                 ( str(cls.td/'foo'/'xy.fifo'), FileType.OTHER ),
             ])
-        else:  # cover-only-win32
-            pass
         cls.expect.sort()
 
     @classmethod
@@ -130,7 +128,7 @@ class TestDirIteration(unittest.TestCase):
     def test_path_walk(self):  # cover-req-ge3.12
         """Using the new Path.walk() is very similar to os.walk()."""
         def path_walker(path):
-            for root, dirs, files in Path(path).walk(on_error=_raise):  # type: ignore[attr-defined, unused-ignore]  # pylint: disable=no-member
+            for root, dirs, files in Path(path).walk(on_error=_raise):  # type: ignore[attr-defined, unused-ignore]  # pylint: disable=no-member,useless-suppression  # noqa: E501
                 for p in ( root/name for name in chain(dirs, files) ):
                     yield p, path_to_type(p)
         self.assertEqual(self.expect,

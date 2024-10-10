@@ -115,7 +115,7 @@ test_cases = (
     ScriptLibResult(Path(), ResultLevel.ERROR, "File looks like a script (due to `if __name__=='__main__'`) but is missing exec bit",
                     ScriptLibFlags.SHEBANG|ScriptLibFlags.NAME_MAIN),
     ScriptLibResult(Path(), ResultLevel.ERROR, "File has `if __name__=='__main__'` and looks like a script due to Expr@L11",
-                    ScriptLibFlags.SHEBANG|ScriptLibFlags.SCRIPT_LIKE|ScriptLibFlags.NAME_MAIN),  # pylint: disable=unsupported-binary-operation
+                    ScriptLibFlags.SHEBANG|ScriptLibFlags.SCRIPT_LIKE|ScriptLibFlags.NAME_MAIN),  # pylint: disable=unsupported-binary-operation,useless-suppression  # noqa: E501
 
     ScriptLibResult(Path(), ResultLevel.ERROR, "File looks like a library but exec bit is set",
                     ScriptLibFlags.EXEC_BIT),
@@ -124,16 +124,16 @@ test_cases = (
     ScriptLibResult(Path(), ResultLevel.ERROR, "File looks like a script (due to `if __name__=='__main__'`) but is missing shebang",
                     ScriptLibFlags.EXEC_BIT|ScriptLibFlags.NAME_MAIN),
     ScriptLibResult(Path(), ResultLevel.ERROR, "File has `if __name__=='__main__'` and looks like a script due to Expr@L10",
-                    ScriptLibFlags.EXEC_BIT|ScriptLibFlags.SCRIPT_LIKE|ScriptLibFlags.NAME_MAIN),  # pylint: disable=unsupported-binary-operation
+                    ScriptLibFlags.EXEC_BIT|ScriptLibFlags.SCRIPT_LIKE|ScriptLibFlags.NAME_MAIN),  # pylint: disable=unsupported-binary-operation,useless-suppression  # noqa: E501
 
     ScriptLibResult(Path(), ResultLevel.ERROR, "File has shebang and exec bit but seems to be missing anything script-like",
                     ScriptLibFlags.EXEC_BIT|ScriptLibFlags.SHEBANG),
     ScriptLibResult(Path(), ResultLevel.NOTICE, "File looks like a normal script (but could use `if __name__=='__main__'`)",
-                    ScriptLibFlags.EXEC_BIT|ScriptLibFlags.SHEBANG|ScriptLibFlags.SCRIPT_LIKE),  # pylint: disable=unsupported-binary-operation
+                    ScriptLibFlags.EXEC_BIT|ScriptLibFlags.SHEBANG|ScriptLibFlags.SCRIPT_LIKE),  # pylint: disable=unsupported-binary-operation,useless-suppression  # noqa: E501
     ScriptLibResult(Path(), ResultLevel.INFO, "File looks like a normal script",
-                    ScriptLibFlags.EXEC_BIT|ScriptLibFlags.SHEBANG|ScriptLibFlags.NAME_MAIN),  # pylint: disable=unsupported-binary-operation
+                    ScriptLibFlags.EXEC_BIT|ScriptLibFlags.SHEBANG|ScriptLibFlags.NAME_MAIN),  # pylint: disable=unsupported-binary-operation,useless-suppression  # noqa: E501
     ScriptLibResult(Path(), ResultLevel.ERROR, "File has `if __name__=='__main__'` and looks like a script due to Expr@L11",
-                    ScriptLibFlags.EXEC_BIT|ScriptLibFlags.SHEBANG|ScriptLibFlags.SCRIPT_LIKE  # pylint: disable=unsupported-binary-operation
+                    ScriptLibFlags.EXEC_BIT|ScriptLibFlags.SHEBANG|ScriptLibFlags.SCRIPT_LIKE  # pylint: disable=unsupported-binary-operation,useless-suppression  # noqa: E501
                     |ScriptLibFlags.NAME_MAIN),
 )
 
@@ -181,7 +181,7 @@ win_test_cases = (
     ScriptLibResult(Path(), ResultLevel.INFO, "File looks like a normal script",
                     ScriptLibFlags.SHEBANG|ScriptLibFlags.NAME_MAIN),
     ScriptLibResult(Path(), ResultLevel.ERROR, "File has `if __name__=='__main__'` and looks like a script due to Expr@L11",
-                    ScriptLibFlags.SHEBANG|ScriptLibFlags.SCRIPT_LIKE|ScriptLibFlags.NAME_MAIN),  # pylint: disable=unsupported-binary-operation
+                    ScriptLibFlags.SHEBANG|ScriptLibFlags.SCRIPT_LIKE|ScriptLibFlags.NAME_MAIN),  # pylint: disable=unsupported-binary-operation,useless-suppression  # noqa: E501
 )
 
 class TestDevUtils(unittest.TestCase):
@@ -229,8 +229,7 @@ class TestDevUtils(unittest.TestCase):
                              ScriptLibResult( pyl, ResultLevel.ERROR, "File looks like a library but exec bit is set", ScriptLibFlags.EXEC_BIT))
             self.assertEqual(check_script_vs_lib(pys, exec_from_git=True),
                              ScriptLibResult( pys, ResultLevel.INFO, "File looks like a normal script",
-                                             ScriptLibFlags.EXEC_BIT  # pylint: disable=unsupported-binary-operation
-                                             |ScriptLibFlags.SHEBANG|ScriptLibFlags.NAME_MAIN ))
+                                             ScriptLibFlags.EXEC_BIT|ScriptLibFlags.SHEBANG|ScriptLibFlags.NAME_MAIN ))  # pylint: disable=unsupported-binary-operation,useless-suppression  # noqa: E501
             with (self.assertRaises(RuntimeError),
                   patch('subprocess.run', return_value=SimpleNamespace(returncode=0, stderr='', stdout='something'))):
                 check_script_vs_lib(pys, exec_from_git=True)
@@ -251,7 +250,7 @@ class TestDevUtils(unittest.TestCase):
                 write_test_file(py2, fh, ScriptLibFlags.SHEBANG)  # bad
             py3 = tdr/'three.py'
             with py3.open('wb') as fh:
-                write_test_file(py3, fh, ScriptLibFlags.SHEBANG  # pylint: disable=unsupported-binary-operation
+                write_test_file(py3, fh, ScriptLibFlags.SHEBANG  # pylint: disable=unsupported-binary-operation,useless-suppression
                                 |ScriptLibFlags.SCRIPT_LIKE|ScriptLibFlags.EXEC_BIT)  # notice
 
             out1 = StringIO()
