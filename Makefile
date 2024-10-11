@@ -19,6 +19,14 @@ test:   smoke-checks nix-checks shellcheck ver-checks other-checks coverage  ## 
 SHELL = /bin/bash
 .ONESHELL:  # each recipe is executed as a single script
 
+build-check:
+	@set -euxo pipefail
+	$(PYTHON3BIN) -m build --sdist
+	$(PYTHON3BIN) -m twine check dist/*.tar.gz
+	if [[ "$$(ls -t dist/*.tar.gz | wc -l)" -ne 1 ]]; then echo "More than one dist/*.tar.gz"; exit 1; fi
+	PYTHON3BIN="$(PYTHON3BIN)" dev/isolated-dist-test.sh dist/*.tar.gz
+	ls dist/*.tar.gz
+
 tasklist:	## List open tasks.
 	@grep --color=auto \
 		--exclude-dir=.git --exclude-dir=__pycache__ --exclude-dir=.ipynb_checkpoints --exclude-dir='.venv*' \
@@ -30,8 +38,7 @@ installdeps:  ## Install project dependencies
 	@set -euxo pipefail
 	$(PYTHON3BIN) -m pip install --upgrade --upgrade-strategy=eager --no-warn-script-location pip wheel
 	$(PYTHON3BIN) -m pip install --upgrade --upgrade-strategy=eager --no-warn-script-location $(foreach x,$(requirement_txts),-r $(x))
-	# for modules/packages:
-	# $(PYTHON3BIN) -m pip install --editable .
+	# $(PYTHON3BIN) -m pip install --editable .  # for modules/packages
 	# other examples: git lfs install / npm ci
 
 smoke-checks:  ## Basic smoke tests

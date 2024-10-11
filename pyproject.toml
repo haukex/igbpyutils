@@ -26,7 +26,7 @@ classifiers = [
 ]
 
 [tool.setuptools]
-packages = ["igbpyutils"]
+packages = ["igbpyutils", "igbpyutils.dev", "igbpyutils.dev.script_vs_lib"]
 
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
