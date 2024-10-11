@@ -4,11 +4,14 @@ Changelog for ``igbpyutils``
 Changelog
 ---------
 
+v0.9.0 - *not yet released*
+    - ...
+
 v0.8.0 - Fri Oct 11 2024
     - **REMOVED** ``gen-coveragerc`` and **deprecated** :func:`~igbpyutils.dev.generate_coveragerc`
         - Use https://pypi.org/project/coverage-simple-excludes/ instead.
     - **Renamed** ``igbpyutils.dev.check_script_vs_lib`` to :func:`igbpyutils.dev.script_vs_lib.check_script_vs_lib`
-        - The former is still available but raises a deprecation warning.
+        - The former is still available but raises a deprecation warning. (*Update:* Warning was not yet implemented in this release)
         - The ``known_shebangs`` argument may now be a regular expression.
         - The ``exec_from_git`` option now uses the current index instead of the tree,
           so uncommitted changes are correctly seen.

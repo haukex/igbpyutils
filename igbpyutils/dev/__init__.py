@@ -24,7 +24,7 @@ import sys
 import warnings
 from pathlib import Path
 from typing import Optional
-# reexport:
+# reexport: TODO - this was actually supposed to raise a DeprecationWarning
 from .script_vs_lib import check_script_vs_lib as check_script_vs_lib  # noqa: F401
 
 def generate_coveragerc(*,  # pragma: no cover
