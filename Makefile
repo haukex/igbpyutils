@@ -11,7 +11,7 @@ perm_checks = ./* .gitignore .vscode .github
 # The user can change the following on the command line:
 PYTHON3BIN = python
 
-.PHONY: help tasklist installdeps test
+.PHONY: help tasklist installdeps test build-check
 .PHONY: smoke-checks nix-checks shellcheck ver-checks other-checks coverage unittest
 test:   smoke-checks nix-checks shellcheck ver-checks other-checks coverage  ## Run all tests
 # Reminder: If the `test` target changes, make the appropriate changes to .github/workflows/tests.yml
@@ -19,19 +19,21 @@ test:   smoke-checks nix-checks shellcheck ver-checks other-checks coverage  ## 
 SHELL = /bin/bash
 .ONESHELL:  # each recipe is executed as a single script
 
-build-check:
+build-check: smoke-checks
 	@set -euxo pipefail
+	[[ "$$OSTYPE" =~ linux.* ]]
 	$(PYTHON3BIN) -m build --sdist
-	$(PYTHON3BIN) -m twine check dist/*.tar.gz
-	if [[ "$$(ls -t dist/*.tar.gz | wc -l)" -ne 1 ]]; then echo "More than one dist/*.tar.gz"; exit 1; fi
-	PYTHON3BIN="$(PYTHON3BIN)" dev/isolated-dist-test.sh dist/*.tar.gz
-	ls dist/*.tar.gz
+	dist_files=(dist/*.tar.gz)
+	$(PYTHON3BIN) -m twine check "$${dist_files[@]}"
+	if [[ $${#dist_files[@]} -ne 1 ]]; then echo "More than one dist file:" "$${dist_files[@]}"; exit 1; fi
+	PYTHON3BIN="$(PYTHON3BIN)" dev/isolated-dist-test.sh "$${dist_files[0]}"
+	echo "$${dist_files[@]}"
 
 tasklist:	## List open tasks.
 	@grep --color=auto \
 		--exclude-dir=.git --exclude-dir=__pycache__ --exclude-dir=.ipynb_checkpoints --exclude-dir='.venv*' \
 		--exclude-dir='.*cache' --exclude-dir=node_modules --exclude='LICENSE*' --exclude='.*.swp' \
-		-Eri 'to.?do'
+		-Eri '\bto.?do\b'
 	true  # ignore nonzero exit code from grep
 
 installdeps:  ## Install project dependencies
@@ -53,9 +55,9 @@ nix-checks:  ## Checks that depend on a *NIX OS/FS
 		echo "- Assuming unreliable permission bits because Windows"
 		set -x
 	else
-		FSTYPE="$$( findmnt --all --first --noheadings --list --output FSTYPE --notruncate --target . )"
-		if [[ "$$FSTYPE" =~ ^(vfat|vboxsf|9p)$$ ]]; then
-			echo "- Assuming unreliable permission bits because FSTYPE=$$FSTYPE"
+		fstype="$$( findmnt --all --first --noheadings --list --output FSTYPE --notruncate --target . )"
+		if [[ "$$fstype" =~ ^(vfat|vboxsf|9p)$$ ]]; then
+			echo "- Assuming unreliable permission bits because fstype=$$fstype"
 			set -x
 		else  # we can probably depend on permission bits being correct
 			unreliable_perms=""

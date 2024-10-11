@@ -52,3 +52,4 @@ for py_ver in 3.9 3.10 3.11 3.12 3.13; do
 
     echo -e "\e[1;32m*** Done with Python $py_ver\e[0m"
 done
+echo -e "\n=====> \e[1;32mALL GOOD\e[0m <====="
