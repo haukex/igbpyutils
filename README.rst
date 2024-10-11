@@ -17,7 +17,7 @@ The documentation is available at https://igbpyutils.readthedocs.io/
 Author, Copyright, and License
 ------------------------------
 
-Copyright (c) 2022-2023 Hauke Daempfling (haukex@zero-g.net)
+Copyright (c) 2022-2024 Hauke Daempfling (haukex@zero-g.net)
 at the Leibniz Institute of Freshwater Ecology and Inland Fisheries (IGB),
 Berlin, Germany, https://www.igb-berlin.de/
 
