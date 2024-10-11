@@ -31,6 +31,9 @@ def generate_coveragerc(*,  # pragma: no cover
                         minver :int, maxver :int, forver :Optional[int]=None, outdir :Optional[Path]=None, verbose :bool=False):
     """Generate ``.coveragerc3.X`` files for various Python 3 versions.
 
+    .. deprecated:: 0.8.0
+        Use https://pypi.org/project/coverage-simple-excludes/ instead.
+
     These generated files provide tags such as ``cover-req-ge3.10`` and ``cover-req-lt3.10`` that can be used
     to exclude source code lines on ranges of Python versions. This tool is used within this project itself.
     In addition, the tags ``cover-linux``, ``cover-win32``, and ``cover-darwin`` are supplied based on ``sys.platform``

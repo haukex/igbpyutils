@@ -17,7 +17,7 @@ v0.7.0 - Sun Oct  6 2024
     - Added :class:`~igbpyutils.error.LoggingStream` for better type checking
       on :func:`igbpyutils.error.logging_config`.
     - Added :func:`igbpyutils.file.open_out`.
-    - :func:`~igbpyutils.dev.check_script_vs_lib` allows more shebangs by default.
+    - ``igbpyutils.dev.check_script_vs_lib`` allows more shebangs by default.
 
 v0.6.0 - Mon Jun 17 2024
     - Added :func:`~igbpyutils.file.simple_cache`.
@@ -48,7 +48,7 @@ v0.3.1 - Sun Oct  8 2023
     - Fixed project requirements
 
 v0.3.0 - Wed Oct  4 2023
-    - Added ``exec_from_git`` option to :func:`~igbpyutils.dev.check_script_vs_lib`
+    - Added ``exec_from_git`` option to ``igbpyutils.dev.check_script_vs_lib``
     - Added :func:`~igbpyutils.file.simple_perms`
 
 v0.2.0 - Sun Sep 24 2023

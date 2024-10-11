@@ -149,7 +149,7 @@ def cmdline_rglob(paths :AnyPaths) -> Generator[Path, None, None]:
         if uniq_ever:
             yield path
 
-class _Pushd:  # cover-req-lt3.11
+class Pushd:  # cover-req-lt3.11
     """A context manager that temporarily changes the current working directory.
 
     On Python >=3.11, this is simply an alias for :func:`contextlib.chdir`."""
@@ -162,7 +162,7 @@ class _Pushd:  # cover-req-lt3.11
         os.chdir(self.prevdir)
         return False  # raise exception if any
 
-Pushd = contextlib.chdir if sys.hexversion>=0x030B00B0 else _Pushd  # type: ignore[attr-defined, unused-ignore]
+Pushd = contextlib.chdir if sys.hexversion>=0x030B00B0 else Pushd  # type: ignore[attr-defined, assignment, misc, unused-ignore]
 
 def filetypestr(st :os.stat_result) -> str:  # pylint: disable=too-many-return-statements
     """Return a string naming the file type reported by :func:`os.stat`."""
@@ -369,7 +369,10 @@ def simple_cache(cache_file :Filename, *, verbose :bool=False) -> Callable[[Call
     No file locking or other synchronization is performed, so this is likely not safe for threading or multiple processes.
 
     No type checking is performed on the data loaded from the file.
-    **WARNING:** Please see the security warnings in the :mod:`pickle` documentation!
+
+    .. warning::
+
+        Please see the security warnings in the :mod:`pickle` documentation!
 
     For much more powerful caching and memoization, look at something like ``diskcache`` or similar modules.
     """

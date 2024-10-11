@@ -71,7 +71,6 @@ ver-checks:  ## Checks that depend on the Python version
 	# https://microsoft.github.io/pyright/#/command-line
 	npx pyright --project pyproject.toml --pythonpath "$$( $(PYTHON3BIN) -c 'import sys; print(sys.executable)' )" $(py_code_locs)
 	$(PYTHON3BIN) -m mypy --config-file pyproject.toml $(py_code_locs)
-	# Note I'm not sure if the following are actually version-dependent, but because they parse the Python code, I'll leave them here.
 	$(PYTHON3BIN) -m flake8 --toml-config=pyproject.toml $(py_code_locs)
 	$(PYTHON3BIN) -m pylint --rcfile=pyproject.toml --recursive=y $(py_code_locs)
 

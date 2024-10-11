@@ -157,6 +157,8 @@ def javaishstacktrace(ex :BaseException) -> Generator[str, None, None]:
 
     Compared to Java, the order of exceptions is reversed, so it reads more like a stack.
 
+    Can be used like so: ``"\\n".join(javaishstacktrace(ex))``
+
     :exc:`AssertionError` is treated specially in that the line of source code that caused them is printed.
     """
     causes = [ex]
