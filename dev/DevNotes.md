@@ -3,6 +3,7 @@ Development Notes
 
 Identical to <https://github.com/haukex/simple-perms/blob/main/dev/DevNotes.md> except:
 - Documentation:
+  - Build deps: `( cd docs && make installdeps )`
   - the changelog is at `docs/changelog.rst`
   - no `make README.md`, instead `( cd docs && make clean all )` checks the build,
     the documentation is actually built on *Read the Docs*

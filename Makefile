@@ -5,7 +5,7 @@
 py_code_locs = igbpyutils tests
 # Hint: $(filter-out whatever,$(py_code_locs))
 # Remember to keep in sync with GitHub Actions workflows:
-requirement_txts = requirements.txt dev/requirements.txt docs/requirements.txt
+requirement_txts = requirements.txt dev/requirements.txt
 perm_checks = ./* .gitignore .vscode .github
 
 # The user can change the following on the command line:
