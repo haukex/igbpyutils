@@ -215,7 +215,9 @@ def open_out(filename :Optional[Filename] = None, mode='w', *, encoding='UTF-8',
     """This context manager either opens the file specified and provides its file object, or,
     if the filename is not specified or it is the string ``"-"``, ``sys.stdout`` is provided.
 
-    *Please note* that the default encoding is UTF-8, which you can of course override with the ``encoding`` parameter."""
+    .. important:: When ``sys.stdout`` is returned, the ``mode``, ``encoding``, ``errors``, and ``newline`` arguments are ignored.
+        Otherwise, when a file is opened, the default encoding is UTF-8, unless you change it.
+    """
     if filename and filename != '-':
         with open(filename, mode, encoding=encoding, errors=errors, newline=newline) as fh:
             yield fh
