@@ -21,4 +21,4 @@ Documentation
 * :ref:`search`
 
 .. include:: ../README.rst
-    :start-after: **The documentation is available at https://igbpyutils.readthedocs.io/**
+    :start-after: **The documentation is available at** https://igbpyutils.readthedocs.io/
