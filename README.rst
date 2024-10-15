@@ -9,9 +9,9 @@ This is a companion library to the ``igbdatatools`` library
 (https://github.com/haukex/igbdatatools) which normally targets the latest
 Python version.
 This library is intended to contain more general-purpose tools and
-cover a slightly broader range of Python versions, currently Python 3.9 to 3.12.
+cover a slightly broader range of Python versions, currently Python 3.9 to 3.13.
 
-The documentation is available at https://igbpyutils.readthedocs.io/
+**The documentation is available at https://igbpyutils.readthedocs.io/**
 
 
 Author, Copyright, and License
