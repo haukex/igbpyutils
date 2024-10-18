@@ -1,12 +1,12 @@
 Development Notes
 =================
 
-Identical to <https://github.com/haukex/simple-perms/blob/main/dev/DevNotes.md> except:
+Identical to <https://github.com/haukex/my-py-templ/blob/main/dev/DevNotes.md> except:
 - Documentation:
+  - Requires Python 3.10! (e.g. `. ~/.venvs/igbpyutils/.venv3.10/bin/activate`)
   - Build deps: `( cd docs && make installdeps )`
-  - the changelog is at `docs/changelog.rst`
-  - no `make README.md`, instead `( cd docs && make clean all )` checks the build,
-    the documentation is actually built on *Read the Docs*
+  - The changelog is at `docs/changelog.rst`
+  - Build: `( cd docs && make clean all )`,
+    but the actual documentation is built on *Read the Docs*
   - Check <https://readthedocs.org/projects/igbpyutils/> to make sure docs are building there
   - `git clean -dxf docs/html`
-- the module name, of course
