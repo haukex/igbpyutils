@@ -69,7 +69,7 @@ def _(item :os.PathLike):
     return Path(item)
 @singledispatch
 def to_Paths(paths :AnyPaths) -> Generator[Path, None, None]:  # pylint: disable=invalid-name
-    """Convert various inputs to :class:`~pathlib.Path` objects."""
+    """Convert various inputs (:class:`AnyPaths`) to :class:`~pathlib.Path` objects."""
     # mypy says this: Argument 1 to "iter" has incompatible type
     # "Union[Union[str, PathLike[Any]], bytes, Iterable[Union[Union[str, PathLike[Any]], bytes]]]"; expected
     # "SupportsIter[Iterator[Union[int, str, PathLike[Any], bytes]]]"

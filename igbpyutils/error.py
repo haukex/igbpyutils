@@ -89,7 +89,10 @@ class CustomHandlers:
     This modifies :func:`warnings.showwarning`, :func:`sys.excepthook`, :func:`sys.unraisablehook`,
     :func:`threading.excepthook`, and, if there's a running :mod:`asyncio` event loop,
     sets its ``loop.set_exception_handler()`` to :func:`asyncio_exception_handler`. The latter can also
-    be done manually later if there is no running loop at the moment."""
+    be done manually later if there is no running loop at the moment.
+
+    :param repeat_msg: See the corresponding argument of :func:`javaishstacktrace`.
+    """
     def __init__(self, *, repeat_msg :bool = False):
         self.repeat_msg = repeat_msg
     #TODO Later: Consider providing a way to customize unittest errors: https://github.com/python/cpython/blob/01481f2d/Lib/unittest/result.py#L187
@@ -172,8 +175,10 @@ def javaishstacktrace(ex :BaseException, *, repeat_msg :bool = False) -> Generat
     Can be used like so: ``"\\n".join(javaishstacktrace(ex))``
 
     :exc:`AssertionError` is treated specially in that the line of source code that caused them is printed.
+
     :param repeat_msg: If this is true, then the exception type and message are repeated at the bottom of the stack trace,
-    without escaping of the message. This can be used to make the exception message easier for a user to read.
+        without escaping of the message. This is intended to make the exception message easier for a user to read.
+        Default is false.
     """
     causes = [ex]
     while ex.__cause__:

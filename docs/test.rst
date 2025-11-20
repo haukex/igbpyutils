@@ -1,9 +1,6 @@
 Utilities for Testing
 =====================
 
-Note the utility previously named "``MyNamedTempFile``"
-has been moved to :class:`igbpyutils.file.NamedTempFileDeleteLater`.
-
 .. automodule:: igbpyutils.test
    :members:
    :undoc-members:
