@@ -172,7 +172,7 @@ def main() -> None:
     parser.add_argument('-n', '--notice', help="show notices and include in issue count", action="store_true")
     parser.add_argument('-g', '--exec-git', help="get the exec bit from git", action="store_true")
     parser.add_argument('paths', help="the paths to check (directories searched recursively)", nargs='*')
-    #TODO: Add an option to add known shebang lines
+    #TODO Later: Add an option to add known shebang lines
     args = parser.parse_args()
     issues :int = 0
     for path in cmdline_rglob(autoglob(args.paths)):

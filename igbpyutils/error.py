@@ -78,7 +78,7 @@ class CustomHandlers:
     be done manually later if there is no running loop at the moment."""
     def __init__(self, *, repeat_msg :bool = False):
         self.repeat_msg = repeat_msg
-    #TODO: Consider providing a way to customize unittest errors: https://github.com/python/cpython/blob/01481f2d/Lib/unittest/result.py#L187
+    #TODO Later: Consider providing a way to customize unittest errors: https://github.com/python/cpython/blob/01481f2d/Lib/unittest/result.py#L187
     def __enter__(self):
 
         # Equivalent to Lib/warnings.py, but customize UserWarning messages to be shorter.
@@ -169,7 +169,7 @@ def javaishstacktrace(ex :BaseException, *, repeat_msg :bool = False) -> Generat
 
     :exc:`AssertionError` is treated specially in that the line of source code that caused them is printed.
     :param repeat_msg: If this is true, then the exception type and message are repeated at the bottom of the stack trace,
-        without escaping of the message. This can be used to make the exception message easier for a user to read.
+    without escaping of the message. This can be used to make the exception message easier for a user to read.
     """
     causes = [ex]
     while ex.__cause__:
@@ -232,7 +232,7 @@ def logging_config(*,
     Other defaults are: Files are always encoded with UTF-8, and any existing handlers are always removed.
 
     Note I also recommend using :func:`logging.captureWarnings`."""
-    #TODO: Actually, logging.captureWarnings doesn't make a very good-looking logging message; we might want to write our own version...
+    #TODO Later: Actually, logging.captureWarnings doesn't make a very good-looking logging message; we might want to write our own version...
     #TODO Later: Consider adding a function that only checks and/or modifies the formatters of existing handlers
     if stream is None and filename is None or stream is True:
         stream = sys.stderr

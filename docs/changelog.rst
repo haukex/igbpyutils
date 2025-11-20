@@ -6,14 +6,14 @@ Changelog
 
 v1.0.0 - *not yet released*
     - Drop support for Python 3.9, begin testing on Python 3.14
-    - **REMOVED** :func:`~igbpyutils.dev.generate_coveragerc`
+    - **REMOVED** ``igbpyutils.dev.generate_coveragerc``
         - Use https://pypi.org/project/coverage-simple-excludes/ instead.
     - ``igbpyutils.dev.check_script_vs_lib`` now actually raises a deprecation warning.
     - Added ``repeat_msg`` option to :func:`igbpyutils.error.javaishstacktrace`,
       :class:`igbpyutils.error.CustomHandlers`, and :func:`igbpyutils.error.init_handlers`.
 
 v0.8.0 - Fri Oct 11 2024
-    - **REMOVED** ``gen-coveragerc`` and **deprecated** :func:`~igbpyutils.dev.generate_coveragerc`
+    - **REMOVED** ``gen-coveragerc`` and **deprecated** ``igbpyutils.dev.generate_coveragerc``
         - Use https://pypi.org/project/coverage-simple-excludes/ instead.
     - **Renamed** ``igbpyutils.dev.check_script_vs_lib`` to :func:`igbpyutils.dev.script_vs_lib.check_script_vs_lib`
         - The former is still available but raises a deprecation warning. (*Update:* Warning was not yet implemented in this release)
@@ -35,7 +35,7 @@ v0.5.0 - Sat Mar 30 2024
         - Use https://pypi.org/project/simple-perms/ instead.
     - **Deprecated** :func:`igbpyutils.iter.is_unique_everseen`
         - Use :func:`more_itertools.classify_unique` instead.
-    - Added ``cover-OS`` tags to :func:`~igbpyutils.dev.generate_coveragerc`
+    - Added ``cover-OS`` tags to ``igbpyutils.dev.generate_coveragerc``
 
 v0.4.1 - Sun Dec 10 2023
     - Fix :func:`~igbpyutils.file.cmdline_rglob` on empty generator
@@ -43,7 +43,7 @@ v0.4.1 - Sun Dec 10 2023
 v0.4.0 - Sun Dec 10 2023
     - Changed :func:`~igbpyutils.file.autoglob` to detect current shell
       via environment variables instead of ``sys.platform``
-    - Added :func:`igbpyutils.dev.generate_coveragerc` and CLI
+    - Added ``igbpyutils.dev.generate_coveragerc`` and CLI
     - Added and used :func:`igbpyutils.file.cmdline_rglob`
         - *Note:* This changes the behavior of the command-line tools included in
           this project slightly in that a directory specified on the command line
