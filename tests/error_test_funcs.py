@@ -27,5 +27,6 @@ def testfunc3():
 # for testing of sys.excepthook
 if __name__ == '__main__':  # pragma: no cover
     import igbpyutils.error
-    igbpyutils.error.init_handlers()
+    import sys
+    igbpyutils.error.init_handlers(repeat_msg='repeat_msg' in sys.argv)
     testfunc0()

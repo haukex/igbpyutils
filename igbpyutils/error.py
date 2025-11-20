@@ -69,54 +69,6 @@ def ex_repr(ex: BaseException) -> str:
     """Return a representation of the exception including its full name and ``.args``."""
     return extype_fullname(type(ex)) + '(' + ', '.join(map(repr, ex.args)) + ')'
 
-# Equivalent to Lib/warnings.py, but customize UserWarning messages to be shorter.
-def _showwarning(message, category, filename, lineno, file=None, line=None):  # pylint: disable=too-many-positional-arguments
-    if file is None:  # pragma: no branch
-        file = sys.stderr
-        if file is None:  # pragma: no cover
-            return
-    if issubclass(category, UserWarning):
-        try:
-            fn = Path(filename).resolve(strict=True)
-        except OSError:  # pragma: no cover
-            fn = Path(filename)
-        if fn.is_relative_to(_basepath):  # pragma: no branch
-            fn = fn.relative_to(_basepath)
-        text = f"{extype_fullname(category)}: {message} at {fn}:{lineno}\n"
-    else:
-        text = warnings.formatwarning(message, category, filename, lineno, line)
-    try:
-        file.write(text)
-    except OSError:  # pragma: no cover
-        pass
-
-# NOTE the following four handlers are actually tested, but coverage doesn't see those tests
-
-def _excepthook(_type, value, _traceback):  # pragma: no cover
-    for s in javaishstacktrace(value):
-        print(s)
-
-def _unraisablehook(unraisable):  # pragma: no cover
-    err_msg = unraisable.err_msg if unraisable.err_msg else "Exception ignored in"
-    print(f'{err_msg}: {unraisable.object!r}')
-    for s in javaishstacktrace(unraisable.exc_value):
-        print(s)
-
-def _threading_excepthook(args):  # pragma: no cover
-    print(f"In thread {args.thread.name if args.thread else '<unknown>'}:", file=sys.stderr)
-    for s in javaishstacktrace(args.exc_value):
-        print(s, file=sys.stderr)
-
-def asyncio_exception_handler(loop, ctx :dict[str, Any]):  # pragma: no cover
-    """A custom version of :mod:`asyncio`'s ``loop.set_exception_handler()``."""
-    print(f"Exception in asyncio: {ctx['message']} ({loop=})", file=sys.stderr)
-    for key, val in ctx.items():
-        if key not in ('message','exception'):
-            print(f"\t{key}: {val!r}", file=sys.stderr)
-    if 'exception' in ctx:
-        for s in javaishstacktrace(ctx['exception']):
-            print(s, file=sys.stderr)
-
 class CustomHandlers:
     """A context manager that installs and removes this module's custom error and warning handlers.
 
@@ -124,8 +76,59 @@ class CustomHandlers:
     :func:`threading.excepthook`, and, if there's a running :mod:`asyncio` event loop,
     sets its ``loop.set_exception_handler()`` to :func:`asyncio_exception_handler`. The latter can also
     be done manually later if there is no running loop at the moment."""
+    def __init__(self, *, repeat_msg :bool = False):
+        self.repeat_msg = repeat_msg
     #TODO: Consider providing a way to customize unittest errors: https://github.com/python/cpython/blob/01481f2d/Lib/unittest/result.py#L187
     def __enter__(self):
+
+        # Equivalent to Lib/warnings.py, but customize UserWarning messages to be shorter.
+        def _showwarning(message, category, filename, lineno, file=None, line=None):  # pylint: disable=too-many-positional-arguments
+            if file is None:  # pragma: no branch
+                file = sys.stderr
+                if file is None:  # pragma: no cover
+                    return
+            if issubclass(category, UserWarning):
+                try:
+                    fn = Path(filename).resolve(strict=True)
+                except OSError:  # pragma: no cover
+                    fn = Path(filename)
+                if fn.is_relative_to(_basepath):  # pragma: no branch
+                    fn = fn.relative_to(_basepath)
+                text = f"{extype_fullname(category)}: {message} at {fn}:{lineno}\n"
+            else:
+                text = warnings.formatwarning(message, category, filename, lineno, line)
+            try:
+                file.write(text)
+            except OSError:  # pragma: no cover
+                pass
+
+        # NOTE the following four handlers are actually tested, but coverage doesn't see those tests
+
+        def _excepthook(_type, value, _traceback):  # pragma: no cover
+            for s in javaishstacktrace(value, repeat_msg=self.repeat_msg):
+                print(s)
+
+        def _unraisablehook(unraisable):  # pragma: no cover
+            err_msg = unraisable.err_msg if unraisable.err_msg else "Exception ignored in"
+            print(f'{err_msg}: {unraisable.object!r}')
+            for s in javaishstacktrace(unraisable.exc_value, repeat_msg=self.repeat_msg):
+                print(s)
+
+        def _threading_excepthook(args):  # pragma: no cover
+            print(f"In thread {args.thread.name if args.thread else '<unknown>'}:", file=sys.stderr)
+            for s in javaishstacktrace(args.exc_value, repeat_msg=self.repeat_msg):
+                print(s, file=sys.stderr)
+
+        def asyncio_exception_handler(loop, ctx :dict[str, Any]):  # pragma: no cover
+            """A custom version of :mod:`asyncio`'s ``loop.set_exception_handler()``."""
+            print(f"Exception in asyncio: {ctx['message']} ({loop=})", file=sys.stderr)
+            for key, val in ctx.items():
+                if key not in ('message','exception'):
+                    print(f"\t{key}: {val!r}", file=sys.stderr)
+            if 'exception' in ctx:
+                for s in javaishstacktrace(ctx['exception'], repeat_msg=self.repeat_msg):
+                    print(s, file=sys.stderr)
+
         self.showwarning_orig = warnings.showwarning  # pylint: disable=attribute-defined-outside-init
         warnings.showwarning = _showwarning
         sys.excepthook = _excepthook
@@ -150,9 +153,12 @@ class CustomHandlers:
             self.loop.set_exception_handler(None)
         return False  # raise exception if any
 
-def init_handlers() -> None:
-    """Set up the :class:`CustomHandlers` once and don't change them back."""
-    CustomHandlers().__enter__()  # pylint: disable=unnecessary-dunder-call
+def init_handlers(*, repeat_msg :bool = False) -> None:
+    """Set up the :class:`CustomHandlers` once and don't change them back.
+
+    :param repeat_msg: See the corresponding argument of :func:`javaishstacktrace`.
+    """
+    CustomHandlers(repeat_msg=repeat_msg).__enter__()  # pylint: disable=unnecessary-dunder-call
 
 def javaishstacktrace(ex :BaseException, *, repeat_msg :bool = False) -> Generator[str, None, None]:
     """Generate a stack trace in the style of Java.

@@ -69,11 +69,7 @@ class TestErrorUtils(unittest.TestCase):
         self.assertEqual(b'', sp2.stderr)
 
     def test_excepthook(self):
-        sp = subprocess.run([sys.executable, tests.error_test_funcs.__file__],
-            capture_output=True, cwd=Path(__file__).parent.parent, env=self.environ, check=False )
-        self.assertNotEqual(0, sp.returncode)
-        self.assertEqual(b'', sp.stderr)
-        self.assertEqual(
+        exp_trace = (
             "TestError('test error 1')\n"
             "\tat error_test_funcs.py:25 in testfunc3\n"
             "\tat error_test_funcs.py:20 in testfunc2\n"
@@ -83,7 +79,18 @@ class TestErrorUtils(unittest.TestCase):
             "which caused: TypeError('test error 3')\n"
             "\tat error_test_funcs.py:16 in testfunc1\n"
             "\tat error_test_funcs.py:10 in testfunc0\n"
-            "\tat error_test_funcs.py:31 in <module>\n",
+            "\tat error_test_funcs.py:32 in <module>\n" )
+        sp = subprocess.run([sys.executable, tests.error_test_funcs.__file__],
+            capture_output=True, cwd=Path(__file__).parent.parent, env=self.environ, check=False )
+        self.assertNotEqual(0, sp.returncode)
+        self.assertEqual(b'', sp.stderr)
+        self.assertEqual(exp_trace, sp.stdout.decode("ASCII").replace("\r\n","\n") )
+        # same thing again, with repeat_msg
+        sp = subprocess.run([sys.executable, tests.error_test_funcs.__file__, 'repeat_msg'],
+            capture_output=True, cwd=Path(__file__).parent.parent, env=self.environ, check=False )
+        self.assertNotEqual(0, sp.returncode)
+        self.assertEqual(b'', sp.stderr)
+        self.assertEqual(exp_trace + "---\n\nTestError: test error 1\n",
             sp.stdout.decode("ASCII").replace("\r\n","\n") )
 
     def test_unraisablehook(self):

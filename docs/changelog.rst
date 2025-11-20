@@ -9,7 +9,8 @@ v1.0.0 - *not yet released*
     - **REMOVED** :func:`~igbpyutils.dev.generate_coveragerc`
         - Use https://pypi.org/project/coverage-simple-excludes/ instead.
     - ``igbpyutils.dev.check_script_vs_lib`` now actually raises a deprecation warning.
-    - Added ``repeat_msg`` option to :func:`igbpyutils.error.javaishstacktrace`.
+    - Added ``repeat_msg`` option to :func:`igbpyutils.error.javaishstacktrace`,
+      :class:`igbpyutils.error.CustomHandlers`, and :func:`igbpyutils.error.init_handlers`.
 
 v0.8.0 - Fri Oct 11 2024
     - **REMOVED** ``gen-coveragerc`` and **deprecated** :func:`~igbpyutils.dev.generate_coveragerc`
