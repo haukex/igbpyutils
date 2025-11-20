@@ -32,6 +32,7 @@ from tempfile import TemporaryDirectory
 from igbpyutils.file import NamedTempFileDeleteLater
 from igbpyutils.dev.script_vs_lib import ScriptLibFlags, ScriptLibResult, ResultLevel, check_script_vs_lib
 import igbpyutils.dev.script_vs_lib as uut
+import igbpyutils.dev
 
 def write_test_file(name, bfh, flags :ScriptLibFlags, *, shebang :str = "#!/usr/bin/env python"):
     with TextIOWrapper(bfh, encoding='UTF-8') as fh:
@@ -195,6 +196,9 @@ class TestScriptVsLib(unittest.TestCase):
                 path = Path(ntf.name)
                 write_test_file(path, ntf, case.flags)
                 self.assertEqual( check_script_vs_lib(path), case._replace(path=path) )
+                # check that the old function name raises a deprecation warning
+                with self.assertWarns(DeprecationWarning):
+                    self.assertEqual( igbpyutils.dev.check_script_vs_lib(path), case._replace(path=path) )
         case1 = ScriptLibResult(Path(), ResultLevel.WARNING, "File has unrecognized shebang '#!/bin/python'",
                                 ScriptLibFlags.SHEBANG)
         with NamedTempFileDeleteLater(suffix='.py') as ntf:

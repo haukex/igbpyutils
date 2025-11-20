@@ -19,5 +19,16 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see https://www.gnu.org/licenses/
 """
-# reexport: TODO - this was actually supposed to raise a DeprecationWarning
-from .script_vs_lib import check_script_vs_lib as check_script_vs_lib  # noqa: F401
+import re
+import warnings
+from typing import Union
+from collections.abc import Sequence
+from igbpyutils.file import Filename
+from .script_vs_lib import DEFAULT_SHEBANG_RE, ScriptLibResult
+from .script_vs_lib import check_script_vs_lib as _check_script_vs_lib
+
+def check_script_vs_lib(path :Filename,
+                        *, known_shebangs :Union[Sequence[str],re.Pattern] = DEFAULT_SHEBANG_RE,
+                        exec_from_git :bool = False) -> ScriptLibResult:
+    warnings.warn('igbpyutils.dev.check_script_vs_lib was renamed to igbpyutils.dev.script_vs_lib.check_script_vs_lib', DeprecationWarning)
+    return _check_script_vs_lib(path, known_shebangs=known_shebangs, exec_from_git=exec_from_git)
