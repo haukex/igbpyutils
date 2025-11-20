@@ -4,7 +4,7 @@ Changelog for ``igbpyutils``
 Changelog
 ---------
 
-v1.0.0 - *not yet released*
+v1.0.0 - Thu Nov 20 2025
     - Drop support for Python 3.9, begin testing on Python 3.14
     - **REMOVED** ``igbpyutils.dev.generate_coveragerc``
         - Use https://pypi.org/project/coverage-simple-excludes/ instead.
