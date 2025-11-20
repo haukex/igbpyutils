@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 
 # WARNING: Line numbers in this file are hard-coded in test_error.py!
+# spell-checker: ignore testfunc excepthook
 
-class TestError(RuntimeError): pass  # noqa: E701
+class TestError(RuntimeError):
+    pass
 
 def testfunc0():
     testfunc1()

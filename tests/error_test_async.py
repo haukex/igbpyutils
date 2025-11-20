@@ -3,6 +3,7 @@ import asyncio
 import igbpyutils.error
 
 # WARNING: Line numbers in this file are hard-coded in test_error.py!
+# spell-checker: ignore testfunc excepthook
 
 async def testfunc0():  # pragma: no cover
     await testfunc1()

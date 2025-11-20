@@ -75,15 +75,15 @@ class TestErrorUtils(unittest.TestCase):
         self.assertEqual(b'', sp.stderr)
         self.assertEqual(
             "TestError('test error 1')\n"
-            "\tat error_test_funcs.py:23 in testfunc3\n"
-            "\tat error_test_funcs.py:18 in testfunc2\n"
-            "which caused: ValueError('test error 2')\n"
+            "\tat error_test_funcs.py:25 in testfunc3\n"
             "\tat error_test_funcs.py:20 in testfunc2\n"
-            "\tat error_test_funcs.py:12 in testfunc1\n"
-            "which caused: TypeError('test error 3')\n"
+            "which caused: ValueError('test error 2')\n"
+            "\tat error_test_funcs.py:22 in testfunc2\n"
             "\tat error_test_funcs.py:14 in testfunc1\n"
-            "\tat error_test_funcs.py:8 in testfunc0\n"
-            "\tat error_test_funcs.py:29 in <module>\n",
+            "which caused: TypeError('test error 3')\n"
+            "\tat error_test_funcs.py:16 in testfunc1\n"
+            "\tat error_test_funcs.py:10 in testfunc0\n"
+            "\tat error_test_funcs.py:31 in <module>\n",
             sp.stdout.decode("ASCII").replace("\r\n","\n") )
 
     def test_unraisablehook(self):
@@ -94,8 +94,8 @@ class TestErrorUtils(unittest.TestCase):
         self.assertRegex(sp.stdout.decode("ASCII"),
             r'''\AException ignored (?:in:|while calling deallocator) <function Foo\.__del__ at 0x[0-9A-Fa-f]+>(?:: None)?\r?\n'''
             r'''RuntimeError\('Bar'\)\r?\n'''
-            r'''\tat error_test_unraisable.py:6 in testfunc\r?\n'''
-            r'''\tat error_test_unraisable.py:10 in __del__\r?\n\Z''')
+            r'''\tat error_test_unraisable.py:7 in testfunc\r?\n'''
+            r'''\tat error_test_unraisable.py:11 in __del__\r?\n\Z''')
 
     def test_javaishstacktrace(self):
         exline = None
@@ -105,14 +105,14 @@ class TestErrorUtils(unittest.TestCase):
         except TypeError as ex:
             self.assertEqual(
                 ("tests.error_test_funcs.TestError('test error 1')",
-                f"\tat {self.mybasepath/'error_test_funcs.py'}:23 in testfunc3",
-                f"\tat {self.mybasepath/'error_test_funcs.py'}:18 in testfunc2",
-                "which caused: ValueError('test error 2')",
+                f"\tat {self.mybasepath/'error_test_funcs.py'}:25 in testfunc3",
                 f"\tat {self.mybasepath/'error_test_funcs.py'}:20 in testfunc2",
-                f"\tat {self.mybasepath/'error_test_funcs.py'}:12 in testfunc1",
-                "which caused: TypeError('test error 3')",
+                "which caused: ValueError('test error 2')",
+                f"\tat {self.mybasepath/'error_test_funcs.py'}:22 in testfunc2",
                 f"\tat {self.mybasepath/'error_test_funcs.py'}:14 in testfunc1",
-                f"\tat {self.mybasepath/'error_test_funcs.py'}:8 in testfunc0",
+                "which caused: TypeError('test error 3')",
+                f"\tat {self.mybasepath/'error_test_funcs.py'}:16 in testfunc1",
+                f"\tat {self.mybasepath/'error_test_funcs.py'}:10 in testfunc0",
                 f"\tat {self.mybasepath/'test_error.py'}:{exline} in test_javaishstacktrace"),
                 tuple(javaishstacktrace(ex)) )
         # check our extension to AssertionErrors
@@ -152,8 +152,8 @@ class TestErrorUtils(unittest.TestCase):
         self.assertRegex(sp.stderr.decode("ASCII"),
             r'''\AIn thread .+:\r?\n'''
             r'''RuntimeError\('Foo'\)\r?\n'''
-            r'''\tat error_test_thread.py:10 in testfunc1\r?\n'''
-            r'''\tat error_test_thread.py:7 in testfunc0\r?\n'''
+            r'''\tat error_test_thread.py:11 in testfunc1\r?\n'''
+            r'''\tat error_test_thread.py:8 in testfunc0\r?\n'''
             r'''(?:\tat .+threading\.py.+\r?\n)+\Z''')
 
     def test_asyncioexcept(self):
@@ -166,8 +166,8 @@ class TestErrorUtils(unittest.TestCase):
             r'''\s+future: .+\r?\n'''
             r'''(?:\s+source_traceback: .+\r?\n)?'''
             r'''RuntimeError\('Quz'\)\r?\n'''
-            r'''\s+at error_test_async.py:11 in testfunc1\r?\n'''
-            r'''\s+at error_test_async.py:8 in testfunc0\r?\n\Z''')
+            r'''\s+at error_test_async.py:12 in testfunc1\r?\n'''
+            r'''\s+at error_test_async.py:9 in testfunc0\r?\n\Z''')
 
     def test_formatter(self):
         msgs = io.StringIO()

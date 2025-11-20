@@ -2,6 +2,7 @@
 from threading import Thread
 
 # WARNING: Line numbers in this file are hard-coded in test_error.py!
+# spell-checker: ignore testfunc excepthook
 
 def testfunc0():
     testfunc1()

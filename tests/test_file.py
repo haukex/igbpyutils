@@ -159,7 +159,7 @@ class TestFileUtils(unittest.TestCase):
                     self.fail()  # pragma: no cover
             # attempting to change back to a directory that no longer exists
             with TemporaryDirectory() as td3:
-                with self.assertRaises(FileNotFoundError):
+                with self.assertRaises(FileNotFoundError):  # pragma: no branch
                     with Pushd(td3):
                         with Pushd(td2):
                             os.rmdir(td3)
@@ -477,6 +477,6 @@ class TestFileUtils(unittest.TestCase):
                     fh.write("World")
                 with open_out('hello') as fh:
                     fh.write('world')
-                with open('hello', encoding='UTF-8') as fh:
+                with open('hello', encoding='UTF-8') as fh:  # pragma: no branch  # why is this needed on 3.14, perhaps a coverage bug?
                     self.assertEqual( fh.read(), 'world' )
         self.assertEqual( out.getvalue(), 'Hello, World' )
