@@ -154,7 +154,7 @@ def init_handlers() -> None:
     """Set up the :class:`CustomHandlers` once and don't change them back."""
     CustomHandlers().__enter__()  # pylint: disable=unnecessary-dunder-call
 
-def javaishstacktrace(ex :BaseException) -> Generator[str, None, None]:
+def javaishstacktrace(ex :BaseException, *, repeat_msg :bool = False) -> Generator[str, None, None]:
     """Generate a stack trace in the style of Java.
 
     Compared to Java, the order of exceptions is reversed, so it reads more like a stack.
@@ -162,6 +162,8 @@ def javaishstacktrace(ex :BaseException) -> Generator[str, None, None]:
     Can be used like so: ``"\\n".join(javaishstacktrace(ex))``
 
     :exc:`AssertionError` is treated specially in that the line of source code that caused them is printed.
+    :param repeat_msg: If this is true, then the exception type and message are repeated at the bottom of the stack trace,
+        without escaping of the message. This can be used to make the exception message easier for a user to read.
     """
     causes = [ex]
     while ex.__cause__:
@@ -186,6 +188,8 @@ def javaishstacktrace(ex :BaseException) -> Generator[str, None, None]:
                 fn = fn.relative_to(_basepath)
             yield f"\tat {fn}:{item.lineno} in {item.name}"
         first = False
+    if repeat_msg:
+        yield from ('---', '', extype_fullname(type(ex))+': '+str(ex))
 
 class CustomFormatter(Formatter):
     """This is a custom :class:`logging.Formatter` that logs errors using :func:`javaishstacktrace`.

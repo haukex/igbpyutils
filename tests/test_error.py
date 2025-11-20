@@ -99,12 +99,7 @@ class TestErrorUtils(unittest.TestCase):
 
     def test_javaishstacktrace(self):
         exline = None
-        try:
-            exline = inspect.stack()[0].lineno + 1
-            tests.error_test_funcs.testfunc0()
-        except TypeError as ex:
-            self.assertEqual(
-                ("tests.error_test_funcs.TestError('test error 1')",
+        exp_trace = ("tests.error_test_funcs.TestError('test error 1')",
                 f"\tat {self.mybasepath/'error_test_funcs.py'}:25 in testfunc3",
                 f"\tat {self.mybasepath/'error_test_funcs.py'}:20 in testfunc2",
                 "which caused: ValueError('test error 2')",
@@ -113,8 +108,21 @@ class TestErrorUtils(unittest.TestCase):
                 "which caused: TypeError('test error 3')",
                 f"\tat {self.mybasepath/'error_test_funcs.py'}:16 in testfunc1",
                 f"\tat {self.mybasepath/'error_test_funcs.py'}:10 in testfunc0",
-                f"\tat {self.mybasepath/'test_error.py'}:{exline} in test_javaishstacktrace"),
+                f"\tat {self.mybasepath/'test_error.py'}:__EXLINE__ in test_javaishstacktrace")
+        try:
+            exline = inspect.stack()[0].lineno + 1
+            tests.error_test_funcs.testfunc0()
+        except TypeError as ex:
+            self.assertEqual( tuple(ln.replace('__EXLINE__',str(exline)) for ln in exp_trace),
                 tuple(javaishstacktrace(ex)) )
+        # same thing again, with repeat_msg:
+        try:
+            exline = inspect.stack()[0].lineno + 1
+            tests.error_test_funcs.testfunc0()
+        except TypeError as ex:
+            self.assertEqual( tuple(ln.replace('__EXLINE__',str(exline)) for ln in exp_trace)
+                + ("---","","tests.error_test_funcs.TestError: test error 1"),
+                tuple(javaishstacktrace(ex, repeat_msg=True)) )
         # check our extension to AssertionErrors
         self.assertTrue(__debug__)
         try:
