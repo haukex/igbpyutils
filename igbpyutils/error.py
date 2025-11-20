@@ -126,8 +126,8 @@ class CustomHandlers:
                 print(s)
 
         def _unraisablehook(unraisable):  # pragma: no cover
-            err_msg = unraisable.err_msg if unraisable.err_msg else "Exception ignored in"
-            print(f'{err_msg}: {unraisable.object!r}')
+            print(unraisable.err_msg+': '+unraisable.object if unraisable.err_msg and unraisable.object
+                  else unraisable.err_msg if unraisable.err_msg else f"Exception ignored in: {unraisable.object!r}")
             for s in javaishstacktrace(unraisable.exc_value, repeat_msg=self.repeat_msg):
                 print(s)
 

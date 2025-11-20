@@ -99,7 +99,7 @@ class TestErrorUtils(unittest.TestCase):
         self.assertEqual(0, sp.returncode)
         self.assertEqual(b'', sp.stderr)
         self.assertRegex(sp.stdout.decode("ASCII"),
-            r'''\AException ignored (?:in:|while calling deallocator) <function Foo\.__del__ at 0x[0-9A-Fa-f]+>(?:: None)?\r?\n'''
+            r'''\AException ignored (?:in:|while calling deallocator) <function Foo\.__del__ at 0x[0-9A-Fa-f]+>\r?\n'''
             r'''RuntimeError\('Bar'\)\r?\n'''
             r'''\tat error_test_unraisable.py:7 in testfunc\r?\n'''
             r'''\tat error_test_unraisable.py:11 in __del__\r?\n\Z''')
