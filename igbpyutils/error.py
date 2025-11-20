@@ -191,7 +191,7 @@ class CustomFormatter(Formatter):
     It also has some better defaults for ``asctime`` formatting (mostly that it is GMT and output with a ``Z`` suffix).
 
     :seealso: :func:`logging_config`"""
-    converter = time.gmtime
+    converter = time.gmtime  # type: ignore[assignment]
     default_time_format = '%Y-%m-%d %H:%M:%S'
     default_msec_format = '%s.%03dZ'
     def formatException(self, ei :tuple) -> str:

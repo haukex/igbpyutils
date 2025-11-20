@@ -332,7 +332,8 @@ def NamedTempFileDeleteLater(*args, **kwargs) -> Generator:  # pylint: disable=i
         yield tf
     finally:
         os.unlink(tf.name)
-NamedTempFileDeleteLater = ( partial(NamedTemporaryFile, delete_on_close=False, delete=True)  # pyright: ignore [reportCallIssue]
+NamedTempFileDeleteLater = (  # pylint: disable=invalid-name
+    partial(NamedTemporaryFile, delete_on_close=False, delete=True)  # pyright: ignore [reportCallIssue]
                             if sys.hexversion>=0x030C00B0 else NamedTempFileDeleteLater )  # type: ignore[assignment]
 
 _perm_map :dict[bool, dict[int, int]] = {

@@ -91,7 +91,7 @@ class TestIterPatterns(unittest.TestCase):
         self.assertEqual(totest, expect)
         totest = []
         for t2 in unzip(gen()):
-            self.assertIsInstance(t2, map)
+            self.assertIsInstance(t2, Generator)
             totest.append(f"got {tuple(t2)!r}")
         self.assertEqual(totest, expect)
 

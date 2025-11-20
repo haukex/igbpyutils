@@ -4,8 +4,8 @@ Changelog for ``igbpyutils``
 Changelog
 ---------
 
-v0.9.0 - *not yet released*
-    - ...
+v1.0.0 - *not yet released*
+    - Drop support for Python 3.9, begin testing on Python 3.14
 
 v0.8.0 - Fri Oct 11 2024
     - **REMOVED** ``gen-coveragerc`` and **deprecated** :func:`~igbpyutils.dev.generate_coveragerc`
