@@ -133,9 +133,7 @@ class TestFileUtils(unittest.TestCase):
 
     def test_pushd(self):
         def realpath(pth):
-            if sys.hexversion>=0x030A00B0:  # cover-req-ge3.10
-                return os.path.realpath(pth, strict=True)  # type: ignore[call-overload, unused-ignore]
-            return os.path.realpath(pth)  # cover-req-lt3.10
+            return os.path.realpath(pth, strict=True)
         prevwd = realpath(os.getcwd())
         with (TemporaryDirectory() as td1, TemporaryDirectory() as td2):
             # basic pushd

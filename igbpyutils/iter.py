@@ -23,42 +23,16 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see https://www.gnu.org/licenses/
 """
-import sys
 import warnings
 from functools import partial
-from itertools import zip_longest
-from typing import TypeVar, Generic, Optional, Any, overload
+from typing import TypeVar, Generic, Optional, Any
 from collections.abc import Sized, Iterator, Iterable, Callable, Generator
 from more_itertools import classify_unique
 
 # spell-checker: ignore everseen fillvalue
 
-_marker = object()
-_T0 = TypeVar('_T0')  # pylint: disable=invalid-name
-_T1 = TypeVar('_T1')  # pylint: disable=invalid-name
-_T2 = TypeVar('_T2')  # pylint: disable=invalid-name
-@overload
-def zip_strict(__iter1: Iterable[_T1]) -> Generator[tuple[_T1], None, None]: ...  # pragma: no cover
-@overload
-def zip_strict(
-    __iter1: Iterable[_T1], __iter2: Iterable[_T2]
-) -> Generator[tuple[_T1, _T2], None, None]: ...  # pragma: no cover
-@overload
-def zip_strict(
-    __iter1: Iterable[_T0],
-    __iter2: Iterable[_T0],
-    __iter3: Iterable[_T0],
-    *iterables: Iterable[_T0],
-) -> Generator[tuple[_T0, ...], None, None]: ...  # pragma: no cover
-def zip_strict(*iterables):  # cover-req-lt3.10
-    """Like Python's ``zip``, but requires all iterables to return the same number of items.
-
-    On Python >=3.10, this simply calls :func:`zip` with ``strict=True``."""
-    for combo in zip_longest(*iterables, fillvalue=_marker):
-        if any( v is _marker for v in combo ):
-            raise ValueError("Iterables have different lengths")
-        yield combo
-zip_strict = partial(zip, strict=True) if sys.hexversion>=0x030A00B0 else zip_strict  # type: ignore[assignment]
+#: Just an alias for :func:`zip` with ``strict=True``, kept for backwards compatibility. May be removed in a future version.
+zip_strict = partial(zip, strict=True)
 
 _T = TypeVar('_T', covariant=True)  # pylint: disable=typevar-name-incorrect-variance
 class SizedCallbackIterator(Generic[_T], Sized, Iterator[_T]):
