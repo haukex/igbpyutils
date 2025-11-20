@@ -69,6 +69,20 @@ def ex_repr(ex: BaseException) -> str:
     """Return a representation of the exception including its full name and ``.args``."""
     return extype_fullname(type(ex)) + '(' + ', '.join(map(repr, ex.args)) + ')'
 
+def _make_aio_handler(*, repeat_msg :bool = False):
+    # NOTE this handler is actually tested, but coverage doesn't see those tests
+    def _asyncio_exception_handler(loop, ctx :dict[str, Any]):  # pragma: no cover
+        print(f"Exception in asyncio: {ctx['message']} ({loop=})", file=sys.stderr)
+        for key, val in ctx.items():
+            if key not in ('message','exception'):
+                print(f"\t{key}: {val!r}", file=sys.stderr)
+        if 'exception' in ctx:
+            for s in javaishstacktrace(ctx['exception'], repeat_msg=repeat_msg):
+                print(s, file=sys.stderr)
+    return _asyncio_exception_handler
+#: A custom version of :mod:`asyncio`'s ``loop.set_exception_handler()``.
+asyncio_exception_handler = _make_aio_handler()
+
 class CustomHandlers:
     """A context manager that installs and removes this module's custom error and warning handlers.
 
@@ -102,7 +116,7 @@ class CustomHandlers:
             except OSError:  # pragma: no cover
                 pass
 
-        # NOTE the following four handlers are actually tested, but coverage doesn't see those tests
+        # NOTE the following three handlers are actually tested, but coverage doesn't see those tests
 
         def _excepthook(_type, value, _traceback):  # pragma: no cover
             for s in javaishstacktrace(value, repeat_msg=self.repeat_msg):
@@ -119,16 +133,6 @@ class CustomHandlers:
             for s in javaishstacktrace(args.exc_value, repeat_msg=self.repeat_msg):
                 print(s, file=sys.stderr)
 
-        def asyncio_exception_handler(loop, ctx :dict[str, Any]):  # pragma: no cover
-            """A custom version of :mod:`asyncio`'s ``loop.set_exception_handler()``."""
-            print(f"Exception in asyncio: {ctx['message']} ({loop=})", file=sys.stderr)
-            for key, val in ctx.items():
-                if key not in ('message','exception'):
-                    print(f"\t{key}: {val!r}", file=sys.stderr)
-            if 'exception' in ctx:
-                for s in javaishstacktrace(ctx['exception'], repeat_msg=self.repeat_msg):
-                    print(s, file=sys.stderr)
-
         self.showwarning_orig = warnings.showwarning  # pylint: disable=attribute-defined-outside-init
         warnings.showwarning = _showwarning
         sys.excepthook = _excepthook
@@ -142,7 +146,7 @@ class CustomHandlers:
         except RuntimeError:
             self.loop = None  # pylint: disable=attribute-defined-outside-init
         else:  # pragma: no cover
-            self.loop.set_exception_handler(asyncio_exception_handler)
+            self.loop.set_exception_handler(_make_aio_handler(repeat_msg=self.repeat_msg))
         return self
     def __exit__(self, exc_type, exc_val, exc_tb):
         warnings.showwarning = self.showwarning_orig
