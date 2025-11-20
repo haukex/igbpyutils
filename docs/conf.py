@@ -36,7 +36,7 @@ def setup(app):
 # ### Configuration ###
 project = 'igbpyutils'
 author = 'Hauke D'
-copyright = '2023-2024 Hauke Daempfling at the IGB'  # pylint: disable=redefined-builtin
+copyright = '2023-2025 Hauke Daempfling at the IGB'  # pylint: disable=redefined-builtin
 def _getver():
     with (Path(__file__).parent.parent/'pyproject.toml').open('rb') as fh:
         return tomli.load(fh)['project']['version']

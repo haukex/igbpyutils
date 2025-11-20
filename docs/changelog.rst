@@ -100,7 +100,7 @@ such as for testing are not listed, and not all documentation updates.
 
 Author, Copyright, and License
 ------------------------------
-Copyright (c) 2023-2024 Hauke Daempfling (haukex@zero-g.net)
+Copyright (c) 2023-2025 Hauke Daempfling (haukex@zero-g.net)
 at the Leibniz Institute of Freshwater Ecology and Inland Fisheries (IGB),
 Berlin, Germany, https://www.igb-berlin.de/
 
