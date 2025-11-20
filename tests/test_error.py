@@ -39,6 +39,9 @@ import tests.error_test_unraisable
 import tests.error_test_thread
 import tests.error_test_async
 
+# spell-checker: ignore funcs SYSTEMROOT extype excepthook testfunc unraisable unraisablehook levelname
+# spell-checker: ignore threadexcept warnline asyncioexcept customwarn exline mybasepath
+
 class TestErrorUtils(unittest.TestCase):
 
     def setUp(self):

@@ -46,6 +46,8 @@ from typing import Any, Optional, Literal, Union, Protocol, runtime_checkable
 import __main__  # just to get __main__.__file__ below
 from igbpyutils.file import Filename
 
+# spell-checker: ignore unraisablehook unraisable excepthook dunder extype gmtime levelname namereplace seealso
+
 def running_in_unittest() -> bool:
     """Attempt to detect if we're running under :mod:`unittest`.
 
@@ -236,8 +238,8 @@ def logging_config(*,
     if filename is not None:
         handlers.append(logging.FileHandler(filename, encoding='UTF-8', errors='namereplace'))
     assert handlers
-    fmtr = CustomFormatter(fmt=fmt)
+    formatter = CustomFormatter(fmt=fmt)
     for hnd in handlers:
-        hnd.setFormatter(fmtr)
+        hnd.setFormatter(formatter)
         root.addHandler(hnd)
     root.setLevel(level)

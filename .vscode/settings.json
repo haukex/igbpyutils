@@ -26,5 +26,13 @@
         "python",
         "markdown"
     ],
+    "cSpell.words": [
+        "autoglob",
+        "hexversion",
+        "igbpyutils",
+        "javaishstacktrace",
+        "Pushd",
+        "unzipwalk"
+    ],
 }
 /* vim: set filetype=javascript ts=4 sw=4 expandtab : */

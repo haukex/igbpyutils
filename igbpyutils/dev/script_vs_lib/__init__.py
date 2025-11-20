@@ -32,6 +32,8 @@ from collections.abc import Sequence
 from typing import NamedTuple, Union
 from igbpyutils.file import Filename, cmdline_rglob, autoglob
 
+# spell-checker: ignore scriptlike
+
 class ResultLevel(enum.IntEnum):
     """A severity level enum for :class:`ScriptLibResult`.
 

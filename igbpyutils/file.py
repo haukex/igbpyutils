@@ -43,6 +43,8 @@ from more_itertools import classify_unique
 
 # Possible To-Do for Later: an idea: implement something like https://stackoverflow.com/q/12593576
 
+# spell-checker: ignore topath tcsh COMSPEC seealso filetypestr
+
 Filename = Union[str, os.PathLike]
 """A type to represent filenames."""
 
@@ -71,7 +73,7 @@ def to_Paths(paths :AnyPaths) -> Generator[Path, None, None]:  # pylint: disable
     # mypy says this: Argument 1 to "iter" has incompatible type
     # "Union[Union[str, PathLike[Any]], bytes, Iterable[Union[Union[str, PathLike[Any]], bytes]]]"; expected
     # "SupportsIter[Iterator[Union[int, str, PathLike[Any], bytes]]]"
-    # => I'm not sure where the "int" is coming from, this seems like some kind of misdetection
+    # => I'm not sure where the "int" is coming from, this seems like some kind of mis-detection
     yield from map(_topath, iter(paths))  # type: ignore[arg-type]
 # I'd like to use Union[bytes, str, os.PathLike] to combine the following three, but apparently singledispatch doesn't support that
 @to_Paths.register
@@ -84,8 +86,8 @@ def _(paths :str) -> Generator[Path, None, None]:
 def _(paths :os.PathLike) -> Generator[Path, None, None]:
     yield _topath(paths)
 
-_nixshell_re = re.compile(r'''(?:\A|\\|/)[a-z]{0,5}sh(?i:\.exe)?\Z''')  # bash, zsh, ksh, tcsh, and many more
-_winshell_re = re.compile(r'''\b(?:COMMAND\.COM|cmd\.exe)\b''', re.I)
+_unix_shell_re = re.compile(r'''(?:\A|\\|/)[a-z]{0,5}sh(?i:\.exe)?\Z''')  # bash, zsh, ksh, tcsh, and many more
+_win_shell_re = re.compile(r'''\b(?:COMMAND\.COM|cmd\.exe)\b''', re.I)
 
 def autoglob(files :Iterable[str], *, force :bool=False) -> Generator[str, None, None]:
     """In Windows ``cmd.exe``, automatically apply :func:`~glob.glob` and :func:`~os.path.expanduser`, otherwise don't change the input.
@@ -106,12 +108,12 @@ def autoglob(files :Iterable[str], *, force :bool=False) -> Generator[str, None,
     fixes that, such that the behavior on Windows is the same as on Linux.
 
     .. note:: This function now uses a heuristic check of the environment variables ``COMSPEC`` and ``SHELL``
-        to detect the current shell. Uncommon values in these variables may cause misdetection; please feel
+        to detect the current shell. Uncommon values in these variables may cause mis-detection; please feel
         free to submit patches if the detection does not work on your system.
     """
-    likely_nixshell = bool(_nixshell_re.search(os.environ.get('SHELL', '')))
-    likely_winshell = bool(_winshell_re.search(os.environ.get('COMSPEC', '')))
-    if likely_winshell and not likely_nixshell or force:
+    likely_unix_shell = bool(_unix_shell_re.search(os.environ.get('SHELL', '')))
+    likely_win_shell = bool(_win_shell_re.search(os.environ.get('COMSPEC', '')))
+    if likely_win_shell and not likely_unix_shell or force:
         for f in files:
             f = expanduser(f)
             g = glob(f)  # note glob always returns a list
@@ -156,10 +158,10 @@ class Pushd:  # cover-req-lt3.11
     def __init__(self, newdir :Filename):
         self.newdir = newdir
     def __enter__(self):
-        self.prevdir = os.getcwd()  # pylint: disable=attribute-defined-outside-init
+        self.prev_dir = os.getcwd()  # pylint: disable=attribute-defined-outside-init
         os.chdir(self.newdir)
     def __exit__(self, exc_type, exc_val, exc_tb):
-        os.chdir(self.prevdir)
+        os.chdir(self.prev_dir)
         return False  # raise exception if any
 
 Pushd = contextlib.chdir if sys.hexversion>=0x030B00B0 else Pushd  # type: ignore[attr-defined, assignment, misc, unused-ignore]
@@ -191,8 +193,8 @@ def filetypestr(st :os.stat_result) -> str:  # pylint: disable=too-many-return-s
         return "whiteout"
     raise ValueError(f"unknown filetype {st.st_mode:#o}")  # pragma: no cover
 
-invalidchars = frozenset( '<>:"/\\|?*' + bytes(range(32)).decode('ASCII') )
-invalidnames = frozenset(( 'CON', 'PRN', 'AUX', 'NUL',
+invalid_chars = frozenset( '<>:"/\\|?*' + bytes(range(32)).decode('ASCII') )
+invalid_names = frozenset(( 'CON', 'PRN', 'AUX', 'NUL',
     'COM0', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9',
     'LPT0', 'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9' ))
 def is_windows_filename_bad(fn :str) -> bool:
@@ -203,10 +205,10 @@ def is_windows_filename_bad(fn :str) -> bool:
 
     Reference: https://learn.microsoft.com/en-us/windows/win32/fileio/naming-a-file
     """
-    return ( bool( set(fn).intersection(invalidchars) )  # invalid characters and names
-        or fn.upper() in invalidnames
+    return ( bool( set(fn).intersection(invalid_chars) )  # invalid characters and names
+        or fn.upper() in invalid_names
         # names are still invalid even if they have an extension
-        or any( fn.upper().startswith(x+".") for x in invalidnames )
+        or any( fn.upper().startswith(x+".") for x in invalid_names )
         # filenames shouldn't end on a space or period
         or fn[-1] in (' ', '.') )
 
@@ -242,19 +244,19 @@ def replacer(file :Filename, *, binary :bool=False, encoding=None, errors=None, 
     fname = Path(file).resolve(strict=True)
     if not fname.is_file():
         raise ValueError(f"not a regular file: {fname}")
-    with fname.open(mode = 'rb' if binary else 'r', encoding=encoding, errors=errors, newline=newline) as infh:
-        origmode = stat.S_IMODE( os.stat(infh.fileno()).st_mode )
+    with fname.open(mode = 'rb' if binary else 'r', encoding=encoding, errors=errors, newline=newline) as ifh:
+        orig_mode = stat.S_IMODE( os.stat(ifh.fileno()).st_mode )
         with NamedTemporaryFile( dir=fname.parent, prefix="."+fname.name+"_", delete=False,
                 mode = 'wb' if binary else 'w', encoding=encoding, errors=errors, newline=newline) as tf:
             try:
-                yield infh, tf
+                yield ifh, tf
             except BaseException:
                 tf.close()
                 os.unlink(tf.name)
                 raise
-    # note because any exceptions are reraised above, we can only get here on success:
+    # note because any exceptions are re-raised above, we can only get here on success:
     try:
-        os.chmod(tf.name, origmode)
+        os.chmod(tf.name, orig_mode)
     except NotImplementedError:  # pragma: no cover
         pass
     os.replace(tf.name, fname)
@@ -334,7 +336,7 @@ def NamedTempFileDeleteLater(*args, **kwargs) -> Generator:  # pylint: disable=i
         os.unlink(tf.name)
 NamedTempFileDeleteLater = (  # pylint: disable=invalid-name
     partial(NamedTemporaryFile, delete_on_close=False, delete=True)  # pyright: ignore [reportCallIssue]
-                            if sys.hexversion>=0x030C00B0 else NamedTempFileDeleteLater )  # type: ignore[assignment]
+    if sys.hexversion>=0x030C00B0 else NamedTempFileDeleteLater )  # type: ignore[assignment]
 
 _perm_map :dict[bool, dict[int, int]] = {
     False: { 0: 0o444, S_IXUSR: 0o555, S_IWUSR: 0o644, S_IWUSR|S_IXUSR: 0o755 },

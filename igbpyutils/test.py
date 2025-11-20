@@ -25,6 +25,8 @@ along with this program. If not, see https://www.gnu.org/licenses/
 from copy import deepcopy
 from typing import TypeVar, Generic
 
+# spell-checker: ignore tempcopy
+
 _T = TypeVar('_T')
 class tempcopy(Generic[_T]):  # pylint: disable=invalid-name
     """A simple context manager that provides a temporary :func:`~copy.deepcopy` of the variable given to it."""

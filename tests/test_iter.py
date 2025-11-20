@@ -24,6 +24,8 @@ import warnings
 from more_itertools import classify_unique
 from igbpyutils.iter import no_duplicates, SizedCallbackIterator, is_unique_everseen, zip_strict
 
+# spell-checker: ignore everseen AAAABBBCCDAABBB
+
 class TestIterTools(unittest.TestCase):
 
     def test_zip_strict(self):
@@ -43,12 +45,12 @@ class TestIterTools(unittest.TestCase):
         g = gen(10)
         with self.assertRaises(TypeError):
             self.assertNotEqual(len(g), 10)  # pyright: ignore [reportArgumentType]
-        cbvals = []
-        it = SizedCallbackIterator(g, 10, callback=lambda *a: cbvals.append(a))
+        cb_vals = []
+        it = SizedCallbackIterator(g, 10, callback=lambda *a: cb_vals.append(a))
         self.assertEqual(len(it), 10)
         self.assertEqual(iter(it), it)
         self.assertEqual(list(it), [0,1,2,3,4,5,6,7,8,9])
-        self.assertEqual(cbvals, [(0,0), (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9)])
+        self.assertEqual(cb_vals, [(0,0), (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9)])
         with self.assertRaises(ValueError):
             SizedCallbackIterator(range(1), -1)
         # strict on
@@ -63,11 +65,11 @@ class TestIterTools(unittest.TestCase):
         def gen2(x):
             for i in range(x):
                 yield chr(ord('a') + i) * (i+1)
-        cbvals.clear()
-        it2 = SizedCallbackIterator(gen2(6), 6, callback=lambda *a: cbvals.append(a))
+        cb_vals.clear()
+        it2 = SizedCallbackIterator(gen2(6), 6, callback=lambda *a: cb_vals.append(a))
         self.assertEqual(len(it2), 6)
         self.assertEqual(list(it2), ['a', 'bb', 'ccc', 'dddd', 'eeeee', 'ffffff'])
-        self.assertEqual(cbvals, [(0,'a'), (1,'bb'), (2,'ccc'), (3,'dddd'), (4,'eeeee'), (5,'ffffff')] )
+        self.assertEqual(cb_vals, [(0,'a'), (1,'bb'), (2,'ccc'), (3,'dddd'), (4,'eeeee'), (5,'ffffff')] )
 
     def test_is_unique_everseen(self):
         with warnings.catch_warnings():

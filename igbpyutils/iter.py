@@ -31,6 +31,8 @@ from typing import TypeVar, Generic, Optional, Any, overload
 from collections.abc import Sized, Iterator, Iterable, Callable, Generator
 from more_itertools import classify_unique
 
+# spell-checker: ignore everseen fillvalue
+
 _marker = object()
 _T0 = TypeVar('_T0')  # pylint: disable=invalid-name
 _T1 = TypeVar('_T1')  # pylint: disable=invalid-name

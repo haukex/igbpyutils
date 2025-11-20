@@ -33,6 +33,10 @@ from tempfile import TemporaryDirectory, NamedTemporaryFile
 from igbpyutils.file import (to_Paths, autoglob, Pushd, filetypestr, is_windows_filename_bad, replacer, replace_symlink, replace_link,
                              NamedTempFileDeleteLater, simple_perms, cmdline_rglob, simple_cache, open_out)
 
+# spell-checker: ignore filetypestr mkfifo COMSPEC
+# spell-checker: ignore Hellu Héllö Wurld blam thisdirectorydoesnotexist zdoesntexist namedtempfiledellater
+# spell-checker: ignore comsp gwdr hardlink iswin linktarg lmode lperm mockcnt mockf noglob testglob tempf nonposix prevwd sugg
+
 class TestFileUtils(unittest.TestCase):
 
     def setUp(self):

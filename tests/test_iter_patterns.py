@@ -31,6 +31,8 @@ from collections.abc import Generator, Iterable
 from more_itertools import unzip, gray_product
 from igbpyutils.iter import zip_strict
 
+# spell-checker: ignore totest Pochmann
+
 class TestIterPatterns(unittest.TestCase):
 
     def test_unzip_zip(self):
@@ -53,8 +55,8 @@ class TestIterPatterns(unittest.TestCase):
             for i, x in enumerate(seq, start=start):
                 totest.append(f"trans {x}")
                 yield x.lower()+str(i)
-        for orow in zip_strict( *( trans(col, ci*3) for ci, col in enumerate(unzip(gen())) ) ):
-            totest.append(f"got {orow!r}")
+        for o_row in zip_strict( *( trans(col, ci*3) for ci, col in enumerate(unzip(gen())) ) ):
+            totest.append(f"got {o_row!r}")
         self.assertEqual([
             "gen ('One', 'Abc', 'Foo')", 'trans One', 'trans Abc', 'trans Foo', "got ('one0', 'abc3', 'foo6')",
             "gen ('Two', 'Def', 'Bar')", 'trans Two', 'trans Def', 'trans Bar', "got ('two1', 'def4', 'bar7')",
@@ -120,7 +122,7 @@ class TestIterPatterns(unittest.TestCase):
             'gen 3', 'trans 6-F', 'got 3-F'] )
         totest.clear()
         # The better variant by Stefan Pochmann at https://stackoverflow.com/a/76271631
-        # (the only minor downside being that PyChram detects "i" as "referenced before assignment")
+        # (the only minor downside being that PyCharm detects "i" as "referenced before assignment")
         for o in trans( (i := x)+4 for x in gen() ):
             totest.append(f"got {i}-{o}")
         self.assertEqual( totest, [

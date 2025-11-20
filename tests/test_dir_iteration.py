@@ -37,6 +37,8 @@ from collections import deque
 from tempfile import TemporaryDirectory
 from more_itertools import only
 
+# spell-checker: ignore mkfifo popleft iterdirer listdirer rglobber scandirer tempd
+
 class FileType(Enum):  # NOTE the names must match those in unzipwalk.FileType!
     FILE = 0
     DIR = 1

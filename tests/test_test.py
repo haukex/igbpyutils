@@ -22,6 +22,8 @@ along with this program. If not, see https://www.gnu.org/licenses/
 import unittest
 from igbpyutils.test import tempcopy
 
+# spell-checker: ignore tempcopy
+
 class TestTestUtils(unittest.TestCase):
 
     def test_tempcopy(self):
