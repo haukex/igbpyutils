@@ -16,6 +16,9 @@ PYTHON3BIN = python
 test:   smoke-checks nix-checks shellcheck ver-checks other-checks coverage  ## Run all tests
 # Reminder: If the `test` target changes, make the appropriate changes to .github/workflows/tests.yml
 
+# spell-checker: ignore txts tasklist installdeps shellcheck FSTYPE MJSON OSTYPE devpod euxo pythonpath rcfile sdist
+# spell-checker: ignore igbpyutils ipynb msys mypy noheadings notruncate pipefail pycache pylint pyproject venv vfat
+
 SHELL = /bin/bash
 .ONESHELL:  # each recipe is executed as a single script
 
